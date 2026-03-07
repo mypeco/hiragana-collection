@@ -1584,6 +1584,16 @@
 
             useEffect(() => {
                 const load = async () => {
+                    if (currentUser && typeof supabaseClient !== 'undefined') {
+                        try {
+                            await supabaseClient.from('profiles').upsert({
+                                id: String(currentUser.id),
+                                name: currentUser.name,
+                                icon: currentUser.icon,
+                                color_label: currentUser.color?.label || 'Blue'
+                            });
+                        } catch(e) { console.error("名簿の同期エラー:", e); }
+                    }
                     const savedSettings = await db.settings.get(currentUser.id);
                     if (savedSettings) setSettings(savedSettings);
 
