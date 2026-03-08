@@ -13,7 +13,6 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-       // Vercelの環境変数から自動で注入される想定、または直接記述
        const SUPABASE_URL = "https://jlzxiewwttwkvetqhxzp.supabase.co";
        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsenhpZXd3dHR3a3ZldHFoeHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NTg1OTMsImV4cCI6MjA4ODQzNDU5M30.lTleRE8Bn8_Xjt1QGz8iKb-hnISk6Q02iTrHtl76L8Y";
        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -23,7 +22,6 @@
 
     <style>
         body { overscroll-behavior: none; background-color: #fdfbf7; }
-        /* touch-action:none はキャンバスだけに絞る（body全体にかけるとiPadでスクロール不可になる） */
         canvas { touch-action: none; }
         .font-kyokasho { font-family: "UD Digi Kyokasho NK-R", "Klee One", serif; }
         .inner-shadow { box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); }
@@ -53,105 +51,82 @@
     <script type="text/babel">
         const { useState, useRef, useEffect, useMemo, useCallback } = React;
 
-        // ▼ ひらがなのデータ定義（内部に持たせています）
         const KANA_GROUPS = [
             { id: 'seion',  label: 'あ〜ん' },
             { id: 'dakuon', label: 'てんてん・まる' },
             { id: 'youon',  label: 'ちいさいもじ' }
         ];
 
-        // =====================================================
-        // ▼ 清音（あ〜ん）46文字
-        // =====================================================
         const SEION_DATA = [
-            // あ行
             { char: 'あ', strokes: 3, word: 'あり',       icon: '🐜' },
             { char: 'い', strokes: 2, word: 'いぬ',       icon: '🐶' },
             { char: 'う', strokes: 2, word: 'うさぎ',     icon: '🐰' },
             { char: 'え', strokes: 2, word: 'えんぴつ',   icon: '✏️' },
             { char: 'お', strokes: 3, word: 'おにぎり',   icon: '🍙' },
-            // か行
             { char: 'か', strokes: 3, word: 'かさ',       icon: '☂️' },
             { char: 'き', strokes: 4, word: 'きつね',     icon: '🦊' },
             { char: 'く', strokes: 1, word: 'くま',       icon: '🐻' },
             { char: 'け', strokes: 3, word: 'けいと',     icon: '🧶' },
             { char: 'こ', strokes: 2, word: 'こま',       icon: '🪀' },
-            // さ行
             { char: 'さ', strokes: 3, word: 'さる',       icon: '🐵' },
             { char: 'し', strokes: 1, word: 'しんかんせん',icon: '🚄' },
             { char: 'す', strokes: 2, word: 'すいか',     icon: '🍉' },
             { char: 'せ', strokes: 3, word: 'せっけん',   icon: '🧼' },
             { char: 'そ', strokes: 1, word: 'そうじ',     icon: '🧹' },
-            // た行
             { char: 'た', strokes: 4, word: 'たこ',       icon: '🐙' },
             { char: 'ち', strokes: 2, word: 'ちょうちょ', icon: '🦋' },
             { char: 'つ', strokes: 1, word: 'つき',       icon: '🌙' },
             { char: 'て', strokes: 1, word: 'てがみ',     icon: '✉️' },
             { char: 'と', strokes: 2, word: 'とけい',     icon: '⌚' },
-            // な行
             { char: 'な', strokes: 4, word: 'なす',       icon: '🍆' },
             { char: 'に', strokes: 3, word: 'にわとり',   icon: '🐔' },
             { char: 'ぬ', strokes: 2, word: 'ぬいぐるみ', icon: '🧸' },
             { char: 'ね', strokes: 2, word: 'ねこ',       icon: '🐱' },
             { char: 'の', strokes: 1, word: 'のりもの',   icon: '🚗' },
-            // は行
             { char: 'は', strokes: 3, word: 'はさみ',     icon: '✂️' },
             { char: 'ひ', strokes: 1, word: 'ひまわり',   icon: '🌻' },
             { char: 'ふ', strokes: 4, word: 'ふうせん',   icon: '🎈' },
             { char: 'へ', strokes: 1, word: 'へび',       icon: '🐍' },
             { char: 'ほ', strokes: 4, word: 'ほん',       icon: '📖' },
-            // ま行
             { char: 'ま', strokes: 3, word: 'まど',       icon: '🪟' },
             { char: 'み', strokes: 2, word: 'みつばち',   icon: '🐝' },
             { char: 'む', strokes: 3, word: 'むし',       icon: '🐛' },
             { char: 'め', strokes: 2, word: 'めがね',     icon: '👓' },
             { char: 'も', strokes: 3, word: 'もも',       icon: '🍑' },
-            // や行
             { char: 'や', strokes: 3, word: 'やま',       icon: '⛰️' },
             { char: 'ゆ', strokes: 2, word: 'ゆき',       icon: '⛄' },
             { char: 'よ', strokes: 2, word: 'よつば',     icon: '🍀' },
-            // ら行
             { char: 'ら', strokes: 2, word: 'らくだ',     icon: '🐫' },
             { char: 'り', strokes: 2, word: 'りんご',     icon: '🍎' },
             { char: 'る', strokes: 1, word: 'かえる',     icon: '🐸' },
             { char: 'れ', strokes: 2, word: 'れいぞうこ', icon: '🧊' },
             { char: 'ろ', strokes: 1, word: 'ろうそく',   icon: '🕯️' },
-            // わ行・ん
             { char: 'わ', strokes: 2, word: 'わに',       icon: '🐊' },
             { char: 'を', strokes: 3, word: 'てをふる',   icon: '👋' },
             { char: 'ん', strokes: 1, word: 'みかん',     icon: '🍊' },
         ];
 
-        // =====================================================
-        // ▼ 濁音・半濁音（が〜ぽ）25文字
-        //   画数 = もとの文字 + てんてん2画 / まる1画
-        // =====================================================
         const DAKUON_DATA = [
-            // が行
             { char: 'が', strokes: 5, word: 'がっこう',   icon: '🏫' },
             { char: 'ぎ', strokes: 6, word: 'ぎゅうにゅう',icon: '🥛' },
             { char: 'ぐ', strokes: 3, word: 'ぐみ',       icon: '🍬' },
             { char: 'げ', strokes: 5, word: 'げんかん',       icon: '🚪' },
             { char: 'ご', strokes: 4, word: 'ごりら',     icon: '🦍' },
-            // ざ行
             { char: 'ざ', strokes: 5, word: 'ざっし',     icon: '📰' },
             { char: 'じ', strokes: 3, word: 'じてんしゃ', icon: '🚲' },
             { char: 'ず', strokes: 4, word: 'ずぼん',     icon: '👖' },
             { char: 'ぜ', strokes: 5, word: 'かぜ',     icon: '🍃' },
             { char: 'ぞ', strokes: 3, word: 'ぞう',       icon: '🐘' },
-            // だ行
             { char: 'だ', strokes: 6, word: 'だるま',     icon: '🎎' },
             { char: 'ぢ', strokes: 4, word: 'はなぢ',     icon: '🤧' },
             { char: 'づ', strokes: 3, word: 'つづみ',     icon: '🥁' },
             { char: 'で', strokes: 3, word: 'でんしゃ',   icon: '🚃' },
             { char: 'ど', strokes: 4, word: 'どんぐり',   icon: '🌰' },
-            // ば行
             { char: 'ば', strokes: 5, word: 'ばなな',     icon: '🍌' },
             { char: 'び', strokes: 3, word: 'びっくりばこ',icon: '🎁' },
             { char: 'ぶ', strokes: 6, word: 'ぶどう',     icon: '🍇' },
             { char: 'べ', strokes: 3, word: 'べんとう',   icon: '🍱' },
             { char: 'ぼ', strokes: 6, word: 'ぼうし',     icon: '🎩' },
-            // ぱ行（半濁音）
             { char: 'ぱ', strokes: 4, word: 'ぱんだ',     icon: '🐼' },
             { char: 'ぴ', strokes: 2, word: 'ぴあの',     icon: '🎹' },
             { char: 'ぷ', strokes: 5, word: 'ぷりん',     icon: '🍮' },
@@ -159,9 +134,6 @@
             { char: 'ぽ', strokes: 5, word: 'ぽすと',     icon: '📮' },
         ];
 
-        // =====================================================
-        // ▼ 小文字（ゃゅょっ）4文字
-        // =====================================================
         const KOGAKI_DATA = [
             { char: 'ゃ', strokes: 3, word: 'おもちゃ',     icon: '👾' },
             { char: 'ゅ', strokes: 2, word: 'きゅうり', icon: '🥒' },
@@ -169,15 +141,12 @@
             { char: 'っ', strokes: 1, word: 'らっぱ',       icon: '🎺' },
         ];
 
-        // ▼ 3つのグループをまとめて1つのリストにする
-        //   groupプロパティはここで一括付与（各グループ内での繰り返しを省略）
         const KANA_DATA = [
             ...SEION_DATA .map(d => ({ ...d, group: 'seion'  })),
             ...DAKUON_DATA.map(d => ({ ...d, group: 'dakuon' })),
             ...KOGAKI_DATA.map(d => ({ ...d, group: 'youon'  })),
         ];
 
-        // ▼ ことば図鑑用データ（コンプリート監視用）
         const WORD_DATA = KANA_DATA.map((k, index) => ({
             id: `w_${index}`,
             word: k.word,
@@ -206,7 +175,6 @@
         const ICON_OPTIONS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🐨', '🐯', '🦁', '🚗', '🚀', '✈️', '🚂', '🚓', '🚑', '⚽', '⚾', '🏀', '🎾', '🍎', '🍓', '🍒', '🍇', '🍉', '☀️', '🌙', '🌟', '❄️', '🌈', '👑', '💎', '🎀', '🎵'];
         const DURATION_OPTIONS = [ { val: 1, label: '1日' }, { val: 3, label: '3日' }, { val: 7, label: '1週間' }, { val: 14, label: '2週間' }, { val: 30, label: '1ヶ月' } ];
 
-        // ▼ 読み上げ関数（Web Speech API）
         const speak = (text, { rate = 0.85, pitch = 1.1 } = {}, voiceNameOverride) => {
             if (!window.speechSynthesis) return;
             window.speechSynthesis.cancel();
@@ -221,7 +189,6 @@
             window.speechSynthesis.speak(utter);
         };
 
-        // ▼ 設定から音声を取得してspeakするラッパー（settings渡し用）
         const speakWithSettings = (text, settings, opts = {}) => {
             if (!window.speechSynthesis) return;
             window.speechSynthesis.cancel();
@@ -236,11 +203,9 @@
             window.speechSynthesis.speak(utter);
         };
 
-        // ▼ シャラン✨きらめき音
         const playSharan = () => {
             try {
                 const ac = new (window.AudioContext || window.webkitAudioContext)();
-                // 高音のきらめき粒を時間差で6粒
                 const notes = [1800, 2400, 3000, 3800, 2800, 3500];
                 notes.forEach((freq, i) => {
                     const o = ac.createOscillator();
@@ -299,15 +264,12 @@
             readWords: '[userId+wordId], userId' 
         });
 
-        // 対象文字をひらがな・漢字などに広げる
         const isTargetChar = (char) => /[\u3040-\u309F\u4e00-\u9faf]/.test(char);
 
         const fetchKanaVGPaths = async (char) => {
-            // まずキャッシュファイルを見る
             if (typeof KANJIVG_CACHE !== 'undefined' && KANJIVG_CACHE[char]) {
-                return KANJIVG_CACHE[char];  // ← 即返す！ネット通信なし
+                return KANJIVG_CACHE[char];
             }
-            // キャッシュにない文字だけ外部から取得（漢字が増えても安心）
             const unicode = char.charCodeAt(0).toString(16).padStart(5, '0');
             const url = `https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@master/kanji/${unicode}.svg`;
             try {
@@ -422,6 +384,9 @@
             );
         };
 
+        // =====================================================
+        // ▼ AdminScreen ― ③「↩️ もどる」ボタンに変更
+        // =====================================================
         const AdminScreen = ({ onBack, settings, saveSettings }) => {
             const fileInputRef = useRef(null);
             const [jaVoices, setJaVoices] = useState([]);
@@ -437,10 +402,9 @@
                 return () => { window.speechSynthesis.onvoiceschanged = null; };
             }, []);
 
-            // iPadのみの音声名リスト（Kyoko, O-ren, Hattori は iOS/macOS専用）
             const IPAD_ONLY_VOICES = ['Kyoko', 'O-ren', 'Hattori', 'Otoya'];
 
-            const handleExport = async () => { /* ... 既存の処理そのまま ... */
+            const handleExport = async () => {
                 try {
                     const data = {
                         version: "1.0",
@@ -468,7 +432,7 @@
                 }
             };
 
-            const handleImport = async (e) => { /* ... 既存の処理そのまま ... */
+            const handleImport = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 if (!window.confirm("データを読み込みます。いまのデータはすべて消えて上書きされますが、いいですか？\n（もとに戻すことはできません）")) {
@@ -503,20 +467,20 @@
             return (
                 <div className="p-6 max-w-5xl mx-auto bg-white min-h-screen">
                     <div className="flex justify-between items-center mb-6 border-b pb-4">
+                        {/* ③ 管理ページの戻るボタン：🏠を削除して ↩️ もどる に変更 */}
                         <button onClick={onBack} className="text-stone-500 flex items-center gap-1 bg-stone-100 px-4 py-2 rounded-full font-bold hover:bg-stone-200 transition-colors">
-                            <span className="text-base leading-none">🏠</span> もどる
+                            ↩️ もどる
                         </button>
                         <h2 className="text-2xl font-bold text-stone-800 flex items-center gap-2">
                             <SettingsIcon className="w-6 h-6"/> 管理・設定画面
                         </h2>
-                        <div className="w-24"></div> {/* 中央揃えのためのスペーサー */}
+                        <div className="w-24"></div>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4">
                         {/* 左カラム */}
                         <div className="space-y-6">
 
-                            {/* ▼ おしゃべり音声 */}
                             <div className="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm">
                                 <h3 className="font-bold text-lg mb-1 text-green-800 flex items-center gap-2">🔊 おしゃべりの声</h3>
                                 <p className="text-xs text-green-600 mb-3">文字やことばを読むときの声をえらべます。</p>
@@ -524,7 +488,6 @@
                                     <p className="text-xs text-stone-400 font-bold">このデバイスでは音声が見つかりませんでした。</p>
                                 ) : (
                                     <div className="flex flex-col gap-2">
-                                        {/* デフォルト */}
                                         <button
                                             onClick={() => { saveSettings({...settings, voiceName: ''}); speak('こんにちは'); }}
                                             className={`px-4 py-2.5 rounded-lg font-bold border-2 transition-all text-left text-sm ${!settings.voiceName ? 'border-green-500 bg-green-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}
@@ -577,18 +540,11 @@
                                 </div>
                             </div>
 
-                            <div className="bg-stone-50 p-4 rounded-xl border border-stone-200">
-                                <h3 className="font-bold text-lg mb-3">納得の1枚を選ぶまでの「目標枚数」</h3>
-                                <div className="flex gap-3">
-                                    {[1, 3, 5, 10].map(num => (
-                                        <button key={num} onClick={() => saveSettings({...settings, targetCount: num})} className={`px-4 py-2 rounded-lg font-bold border-2 transition-all ${settings.targetCount === num ? 'border-sky-500 bg-sky-100 text-sky-700' : 'border-stone-300 bg-white text-stone-600'}`}>{num} 回</button>
-                                    ))}
-                                </div>
-                            </div>
+                            {/* ① 「目標枚数」セクションを削除 ― ここには何も置かない */}
 
                             <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm">
                                 <h3 className="font-bold text-lg mb-1 text-indigo-800 flex items-center gap-2">🎯 れんしゅうの ながれ</h3>
-                                <p className="text-xs text-indigo-600 mb-3">各モードの目標回数を設定します。目標に達すると自動で次のモードに進みます。0回にするとそのモードをスキップします。</p>
+                                <p className="text-xs text-indigo-600 mb-3">各モードの目標回数を設定します。すべてのモードが完了すると、なかから1枚えらべます。0回にするとそのモードをスキップします。</p>
                                 {[
                                     { key: 'traceTarget',  label: 'なぞり',   emoji: '✏️', activeStyle: { borderColor: '#0ea5e9', backgroundColor: '#e0f2fe', color: '#0369a1' }, defaultVal: 3 },
                                     { key: 'blankTarget',  label: 'おてほん', emoji: '📝', activeStyle: { borderColor: '#22c55e', backgroundColor: '#dcfce7', color: '#15803d' }, defaultVal: 2 },
@@ -681,6 +637,9 @@
             );
         };
 
+        // =====================================================
+        // ▼ PracticeStudio
+        // =====================================================
         const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onSaveBest, onSaveComplete, onOpenAdmin, onToggleSound }) => {
             const [isGuideWatched, setIsGuideWatched] = useState(false);
             const hand = settings.hand || 'right'; 
@@ -713,6 +672,17 @@
             const audioCtxRef = useRef(null);
             const noiseSourceRef = useRef(null);
             const noiseGainRef = useRef(null);
+
+            // ① 各モードの目標回数をコンポーネントレベルで定義
+            const traceTarget = settings.traceTarget ?? 3;
+            const blankTarget = settings.blankTarget ?? 2;
+            const testTarget  = settings.testTarget  ?? 1;
+
+            // ① isGoalReached：全モードの目標をクリアしたら true
+            const isGoalReached = 
+                (traceTarget === 0 || sessionLogs.trace >= traceTarget) &&
+                (blankTarget === 0 || sessionLogs.blank >= blankTarget) &&
+                (testTarget  === 0 || sessionLogs.test  >= testTarget);
 
             useEffect(() => {
                 const loadData = async () => {
@@ -814,11 +784,9 @@
                 return () => { isMounted = false; };
             }, [targetKanji.char]);
 
-            // ▼ キラッ：できたときの音
             const playDoneSound = () => {
                 try {
                     const ac = new (window.AudioContext || window.webkitAudioContext)();
-                    // キラキラの高音パーティクル（3粒）
                     const notes = [2400, 3200, 4100];
                     notes.forEach((freq, i) => {
                         const o = ac.createOscillator();
@@ -834,7 +802,6 @@
                         g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
                         o.start(t); o.stop(t + 0.2);
                     });
-                    // ポンっと着地音
                     const o2 = ac.createOscillator();
                     const g2 = ac.createGain();
                     o2.connect(g2); g2.connect(ac.destination);
@@ -849,101 +816,94 @@
             };
 
             const handleFinish = async (skipCheck = false) => {
-            if(isAnimating || !hasDrawn) return;
-            
-            if (!skipCheck) {
-                const actualStrokes = allStrokesRef.current.length;
-                const requiredStrokes = targetKanji.strokes - 1;
-                if (actualStrokes < requiredStrokes) {
-                    setStrokeWarning(true);
-                    return;
+                if(isAnimating || !hasDrawn) return;
+                
+                if (!skipCheck) {
+                    const actualStrokes = allStrokesRef.current.length;
+                    const requiredStrokes = targetKanji.strokes - 1;
+                    if (actualStrokes < requiredStrokes) {
+                        setStrokeWarning(true);
+                        return;
+                    }
                 }
-            }
-            
-            const strokes = [...allStrokesRef.current]; 
-            const dataUrl = canvasRef.current.toDataURL('image/png');
-            const currentLogs = { ...sessionLogs, [practiceMode]: sessionLogs[practiceMode] + 1 };
-            
-            setIsAnimating(true);
+                
+                const strokes = [...allStrokesRef.current]; 
+                const dataUrl = canvasRef.current.toDataURL('image/png');
+                const currentLogs = { ...sessionLogs, [practiceMode]: sessionLogs[practiceMode] + 1 };
+                
+                setIsAnimating(true);
 
-            // Supabaseへ回数だけをカウントアップ
-            try {
-                const columnName = `${practiceMode}_count`;
-                await supabaseClient.rpc('increment_practice_count', { 
-                    p_user_id: currentUser.id, 
-                    p_char: targetKanji.char, 
-                    p_column: columnName 
-                });
-            } catch (err) {
-                console.error("Supabase保存エラー:", err);
-            }
+                try {
+                    const columnName = `${practiceMode}_count`;
+                    await supabaseClient.rpc('increment_practice_count', { 
+                        p_user_id: currentUser.id, 
+                        p_char: targetKanji.char, 
+                        p_column: columnName 
+                    });
+                } catch (err) {
+                    console.error("Supabase保存エラー:", err);
+                }
 
-            // ローカル保存用のデータ作成
-            const newPractice = {
-                userId: currentUser.id,
-                char: targetKanji.char,
-                image: dataUrl,
-                strokes: strokes, 
-                type: practiceMode, 
-                logs: currentLogs,  
-                timestamp: Date.now()
+                const newPractice = {
+                    userId: currentUser.id,
+                    char: targetKanji.char,
+                    image: dataUrl,
+                    strokes: strokes, 
+                    type: practiceMode, 
+                    logs: currentLogs,  
+                    timestamp: Date.now()
+                };
+
+                const id = await db.practices.add(newPractice);
+                setStrokeWarning(false);
+                setLastWrittenImage(dataUrl);
+
+                const canvasRect = canvasRef.current.getBoundingClientRect();
+                const stripRect = practicesStripRef.current ? practicesStripRef.current.getBoundingClientRect() : null;
+                const targetCardW = 80;
+                const scale = targetCardW / canvasRect.width;
+                const srcCX = canvasRect.left + canvasRect.width / 2;
+                const srcCY = canvasRect.top + canvasRect.height / 2;
+                let destCX = srcCX, destCY = srcCY - 140;
+                if (stripRect) {
+                    destCX = stripRect.left + 48 + targetCardW / 2;
+                    destCY = stripRect.top + stripRect.height / 2;
+                }
+                const tx = destCX - srcCX;
+                const ty = destCY - srcCY;
+
+                if (settings.soundEnabled !== false) playDoneSound();
+                setFlyingCard({ active: true, image: dataUrl, startX: canvasRect.left, startY: canvasRect.top, w: canvasRect.width, h: canvasRect.height, tx, ty, scale, flying: false });
+                
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    setFlyingCard(prev => ({ ...prev, flying: true }));
+                }));
+
+                setTimeout(() => {
+                    setFlyingCard({ active: false, image: null, startX: 0, startY: 0, w: 60, h: 60, tx: 0, ty: 0, scale: 1, flying: false });
+                    setPractices(prev => [{ ...newPractice, id }, ...prev]);
+                    setIsAnimating(false);
+                    setHasDrawn(false); 
+                    contextRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); 
+                    allStrokesRef.current = [];
+                    currentStrokeRef.current = [];
+                    setSessionLogs(currentLogs);
+
+                    // ▼ 自動モード遷移
+                    const nextMode = (() => {
+                        if (practiceMode === 'trace' && traceTarget > 0 && currentLogs.trace >= traceTarget) {
+                            if (blankTarget > 0) return 'blank';
+                            if (testTarget  > 0) return 'test';
+                        }
+                        if (practiceMode === 'blank' && blankTarget > 0 && currentLogs.blank >= blankTarget) {
+                            if (testTarget > 0) return 'test';
+                        }
+                        return null;
+                    })();
+                    if (nextMode) setPracticeMode(nextMode);
+                }, 800); 
             };
 
-            const id = await db.practices.add(newPractice);
-            setStrokeWarning(false);
-            setLastWrittenImage(dataUrl);
-
-            // アニメーション用の設定
-            const canvasRect = canvasRef.current.getBoundingClientRect();
-            const stripRect = practicesStripRef.current ? practicesStripRef.current.getBoundingClientRect() : null;
-            const targetCardW = 80;
-            const scale = targetCardW / canvasRect.width;
-            const srcCX = canvasRect.left + canvasRect.width / 2;
-            const srcCY = canvasRect.top + canvasRect.height / 2;
-            let destCX = srcCX, destCY = srcCY - 140;
-            if (stripRect) {
-                destCX = stripRect.left + 48 + targetCardW / 2;
-                destCY = stripRect.top + stripRect.height / 2;
-            }
-            const tx = destCX - srcCX;
-            const ty = destCY - srcCY;
-
-            if (settings.soundEnabled !== false) playDoneSound();
-            setFlyingCard({ active: true, image: dataUrl, startX: canvasRect.left, startY: canvasRect.top, w: canvasRect.width, h: canvasRect.height, tx, ty, scale, flying: false });
-            
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-                setFlyingCard(prev => ({ ...prev, flying: true }));
-            }));
-
-            setTimeout(() => {
-                setFlyingCard({ active: false, image: null, startX: 0, startY: 0, w: 60, h: 60, tx: 0, ty: 0, scale: 1, flying: false });
-                setPractices(prev => [{ ...newPractice, id }, ...prev]);
-                setIsAnimating(false);
-                setHasDrawn(false); 
-                contextRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); 
-                allStrokesRef.current = [];
-                currentStrokeRef.current = [];
-                setSessionLogs(currentLogs);
-
-                // ▼ 自動モード遷移
-                const traceTarget = settings.traceTarget ?? 3;
-                const blankTarget = settings.blankTarget ?? 2;
-                const testTarget  = settings.testTarget  ?? 1;
-                const nextMode = (() => {
-                    if (practiceMode === 'trace' && traceTarget > 0 && currentLogs.trace >= traceTarget) {
-                        if (blankTarget > 0) return 'blank';
-                        if (testTarget  > 0) return 'test';
-                    }
-                    if (practiceMode === 'blank' && blankTarget > 0 && currentLogs.blank >= blankTarget) {
-                        if (testTarget > 0) return 'test';
-                    }
-                    return null;
-                })();
-                if (nextMode) setPracticeMode(nextMode);
-            }, 800); 
-        };
-
-            const isGoalReached = practices.length >= settings.targetCount;
             const completionLevel = settings.completionLevel || 1;
 
             const canSelect = (type) => {
@@ -986,10 +946,8 @@
                             <div className="flex-1 flex justify-center">
                                 <div className="flex items-center gap-3 md:gap-6 bg-white px-4 py-3 md:px-8 md:py-4 rounded-3xl shadow-md border-2 border-amber-200 max-w-2xl w-full">
                                     
-                                    {/* 左側：対象文字（みないでモードで目隠し） */}
                                     <div className={`relative shrink-0 pr-3 md:pr-6 py-1 md:py-2 ${isTestMode ? 'border-transparent' : 'border-r-2 border-dashed border-stone-200'}`}>
                                         <div className="text-4xl sm:text-5xl md:text-6xl font-kyokasho text-stone-800 font-bold leading-none tracking-widest">【{targetKanji.char}】</div>
-                                        {/* ▼ テストモード時の目隠しマスク */}
                                         {isTestMode && (
                                             <div className="absolute -inset-y-1 -left-2 -right-3 md:-inset-y-2 md:-right-4 bg-stone-100 rounded-xl flex items-center justify-center text-stone-400 z-10 border border-stone-200 shadow-inner">
                                                 <span className="text-2xl md:text-3xl grayscale opacity-50">🙈</span>
@@ -997,14 +955,12 @@
                                         )}
                                     </div>
 
-                                    {/* 右側：絵文字と単語（「みないで」のときは単語も目隠し） */}
                                     <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1 relative">
                                         <span className="text-4xl sm:text-5xl md:text-6xl shrink-0 drop-shadow-sm relative z-20">{targetKanji.icon}</span>
                                         <div className="flex flex-wrap items-end gap-1 min-w-0 relative flex-1">
                                             <span className="text-xl sm:text-2xl md:text-3xl font-kyokasho text-stone-700 font-bold tracking-widest break-words leading-tight">
                                                 {targetKanji.word}
                                             </span>
-                                            {/* ▼ 単語への目隠しマスク */}
                                             {isTestMode && (
                                                 <div className="absolute -inset-y-2 -left-2 -right-2 bg-stone-100 rounded-xl flex items-center justify-center text-stone-400 z-10 border border-stone-200 shadow-inner">
                                                     <span className="text-xl md:text-2xl grayscale opacity-50">🙈</span>
@@ -1018,10 +974,10 @@
                             <div className="w-20 shrink-0"></div> 
                         </div>
 
+                        {/* ▼ 練習ストリップ ① 新しい進捗バッジ */}
                         <div ref={practicesStripRef} className={`w-[95%] h-36 md:h-44 rounded-2xl p-3 md:p-4 flex gap-3 overflow-x-auto relative items-center transition-all duration-500 ${isGoalReached ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-4 border-amber-400 shadow-lg' : 'bg-white border-4 border-amber-200 shadow-sm'}`}
                             style={isGoalReached ? { boxShadow: '0 0 0 4px #fde68a44, 0 4px 24px #fbbf2420' } : {}}>
                             
-                            {/* 空のとき */}
                             {practices.length === 0 && (
                                 <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-amber-400">
                                     <span className="text-3xl opacity-50">✍️</span>
@@ -1037,10 +993,25 @@
                                 </div>
                             )}
                             
-                            {/* あと○まいバッジ */}
-                            {!isGoalReached && practices.length > 0 && (
-                                <div className="absolute top-0 left-0 bg-stone-400/70 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-br-xl z-20 flex items-center gap-1 shadow">
-                                    <Lock className="w-3 h-3 md:w-4 md:h-4"/> あと {settings.targetCount - practices.length} まい
+                            {/* ① モード別進捗バッジ */}
+                            {!isGoalReached && (
+                                <div className="absolute top-0 left-0 bg-stone-500/80 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-br-xl z-20 flex items-center gap-1.5 shadow">
+                                    <Lock className="w-3 h-3 shrink-0"/>
+                                    {traceTarget > 0 && (
+                                        <span className={`px-1 py-0.5 rounded ${sessionLogs.trace >= traceTarget ? 'text-green-300' : 'text-white/80'}`}>
+                                            ✏️{sessionLogs.trace}/{traceTarget}
+                                        </span>
+                                    )}
+                                    {blankTarget > 0 && (
+                                        <span className={`px-1 py-0.5 rounded ${sessionLogs.blank >= blankTarget ? 'text-green-300' : 'text-white/80'}`}>
+                                            📝{sessionLogs.blank}/{blankTarget}
+                                        </span>
+                                    )}
+                                    {testTarget > 0 && (
+                                        <span className={`px-1 py-0.5 rounded ${sessionLogs.test >= testTarget ? 'text-green-300' : 'text-white/80'}`}>
+                                            ⭐{sessionLogs.test}/{testTarget}
+                                        </span>
+                                    )}
                                 </div>
                             )}
 
@@ -1069,8 +1040,8 @@
                                             ${!isGoalReached || !isSelectable ? 'opacity-40 grayscale border-stone-200' + (!isSelectable && isGoalReached ? ' cursor-not-allowed' : '') : ''}`}>
                                         
                                         <div className="w-full h-full p-1">
-    <SvgStroke strokes={p.strokes} strokeWidth={10} color="#374151" />
-</div>
+                                            <SvgStroke strokes={p.strokes} strokeWidth={10} color="#374151" />
+                                        </div>
                                         
                                         {p.type === 'trace' && <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-sky-600 bg-sky-50 px-1.5 border border-sky-200 rounded-full whitespace-nowrap shadow-sm">なぞり</span>}
                                         {p.type === 'blank' && <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-green-700 bg-green-50 px-1.5 border border-green-200 rounded-full whitespace-nowrap shadow-sm">おてほん</span>}
@@ -1113,9 +1084,6 @@
                                 
                                 <div className="absolute -top-10 right-0 flex bg-white rounded-full shadow-sm border p-0.5 z-20 overflow-hidden">
                                     {(() => {
-                                        const traceTarget = settings.traceTarget ?? 3;
-                                        const blankTarget = settings.blankTarget ?? 2;
-                                        const testTarget  = settings.testTarget  ?? 1;
                                         const traceDone   = sessionLogs.trace;
                                         const blankDone   = sessionLogs.blank;
                                         const testDone    = sessionLogs.test;
@@ -1157,7 +1125,6 @@
                                         );
                                     })()}
                                     
-                                    {/* ▼ みないでモードの時は十字線も隠す */}
                                     {!isTestMode && (
                                         <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
                                             <div className="absolute top-1/2 w-full border-t-2 border-dashed border-red-300"></div>
@@ -1200,7 +1167,6 @@
                                     </div>
                                 )}
 
-                                {/* ▼ フライングカード（できた！アニメーション） */}
                                 {flyingCard.active && (
                                     <div style={{
                                         position: 'fixed',
@@ -1323,31 +1289,29 @@
 
             const handleDeleteUser = async (userId, userName, e) => {
                 e.stopPropagation(); 
-               　 if (window.confirm(`${userName} の データを ぜんぶ けしますか？\n（けした データは もとにもどせません）`)) {
-        　　　　　　// ローカルを削除
-       　　　　　　 await db.users.delete(userId);
-        　　　　　　await db.settings.where({ userId: userId }).delete();
-        　　　　　　await db.practices.where({ userId: userId }).delete();
-        　　　　　　await db.bestShots.where({ userId: userId }).delete();
-        　　　　　　await db.readWords.where({ userId: userId }).delete();
+                if (window.confirm(`${userName} の データを ぜんぶ けしますか？\n（けした データは もとにもどせません）`)) {
+                    await db.users.delete(userId);
+                    await db.settings.where({ userId: userId }).delete();
+                    await db.practices.where({ userId: userId }).delete();
+                    await db.bestShots.where({ userId: userId }).delete();
+                    await db.readWords.where({ userId: userId }).delete();
 
-        　　　　　　// Supabaseからも削除 ← これを追加！
-        　　　　　try {
-            　　　　await supabaseClient
-                　　.from('profiles')
-                　　.delete()
-                　　.eq('id', String(userId));
-            　　　await supabaseClient
-                　　.from('best_shots')
-                　　.delete()
-                　　.eq('user_id', String(userId));
-        　　　　　　　} catch(e) {
-           　　　 console.error("Supabase削除エラー:", e);
-       　　　　　　　 }
+                    try {
+                        await supabaseClient
+                            .from('profiles')
+                            .delete()
+                            .eq('id', String(userId));
+                        await supabaseClient
+                            .from('best_shots')
+                            .delete()
+                            .eq('user_id', String(userId));
+                    } catch(e) {
+                        console.error("Supabase削除エラー:", e);
+                    }
 
-        setUsers(prev => prev.filter(u => u.id !== userId));
-    }
-};
+                    setUsers(prev => prev.filter(u => u.id !== userId));
+                }
+            };
 
             if (isCreating) {
                 return (
@@ -1405,7 +1369,6 @@
             );
         };
 
-        // ▼ 五十音表（変わらないデータなのでコンポーネントの外に置く）
         const SEION_TABLE = [
             ['あ', 'い', 'う', 'え', 'お'],
             ['か', 'き', 'く', 'け', 'こ'],
@@ -1428,7 +1391,6 @@
             ['ゃ', 'ゅ', 'ょ', 'っ', null]
         ];
 
-        // ▼ アニメーション関数（stateを使わないのでコンポーネントの外に置く）
         const emitParticles = async (targetElement) => {
             const rect = targetElement.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
@@ -1480,14 +1442,13 @@
             stars.forEach(star => star.remove()); 
         };
 
-        // ▼ 図鑑タップ時の絵文字飛び出しアニメーション
         const emitEmojiParticles = (e, emoji) => {
             if (navigator.vibrate) navigator.vibrate(30);
             const rect = e.currentTarget.getBoundingClientRect();
             const startX = rect.left + rect.width / 2;
             const startY = rect.top + rect.height / 2;
 
-            const COUNT = 5; // 数を減らす（元は8）
+            const COUNT = 5;
             for (let i = 0; i < COUNT; i++) {
                 const el = document.createElement("div");
                 el.innerText = emoji;
@@ -1500,32 +1461,27 @@
                 el.style.filter = "drop-shadow(0 4px 6px rgba(0,0,0,0.2))";
                 document.body.appendChild(el);
 
-                // 放射状に広がる角度
                 const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI; 
                 const velocity = 80 + Math.random() * 60;
-                const duration = 1000 + Math.random() * 500; // 時間を長くして遅くする（元は600~1000）
+                const duration = 1000 + Math.random() * 500;
                 
                 el.animate([
                     { transform: `translate(-50%, -50%) scale(0.5)`, opacity: 1 },
-                    // 直線的に移動し、scaleを大きく(2.0)する。Y軸の余計な上下動を削除
                     { transform: `translate(calc(-50% + ${Math.cos(angle) * velocity}px), calc(-50% + ${Math.sin(angle) * velocity}px)) scale(2.0)`, opacity: 1, offset: 0.7 },
-                    // さらに少しだけ進みながら、もっと大きくなりつつ(2.2)、透明度0でスッと消える
                     { transform: `translate(calc(-50% + ${Math.cos(angle) * velocity * 1.2}px), calc(-50% + ${Math.sin(angle) * velocity * 1.2}px)) scale(2.2)`, opacity: 0 }
-                ], { duration, easing: "ease-out", fill: "forwards" }); // ease-outで最後がスローになる
+                ], { duration, easing: "ease-out", fill: "forwards" });
 
                 setTimeout(() => el.remove(), duration);
             }
         };
 
-        // ▼ ことばずかん登録モーダル
         const WordRegisterModal = ({ wordObj, bestShots, onComplete, settings }) => {
             const allChars = wordObj.word.split('');
             const targetIndices = allChars.reduce((acc, c, i) => { if (isTargetChar(c)) acc.push(i); return acc; }, []);
-            const [filled, setFilled] = useState([]); // 埋まったインデックスの配列
+            const [filled, setFilled] = useState([]);
             const [celebrating, setCelebrating] = useState(false);
-            const [slotAnimating, setSlotAnimating] = useState(null); // アニメーション中のインデックス
+            const [slotAnimating, setSlotAnimating] = useState(null);
 
-            // 各文字の「必要枚数」「埋まった枚数」を計算
             const charCount = {};
             targetIndices.forEach(i => { charCount[allChars[i]] = (charCount[allChars[i]] || 0) + 1; });
             const charFilled = {};
@@ -1538,7 +1494,6 @@
                 if (firstEmpty === undefined) return;
                 if (navigator.vibrate) navigator.vibrate(30);
 
-                // 文字を読み上げ
                 speakWithSettings(char, settings, { rate: 0.8, pitch: 1.2 });
 
                 setSlotAnimating(firstEmpty);
@@ -1562,23 +1517,19 @@
                     <div className="relative w-full max-w-lg bg-[#fdfbf7] rounded-3xl shadow-2xl overflow-hidden animate-bounce-in"
                         style={{ paddingBottom: '24px' }}>
                         
-                        {/* 上部デコライン */}
                         <div className="w-full h-2 bg-gradient-to-r from-amber-300 via-orange-300 to-amber-300"/>
                         
-                        {/* ハンドル */}
                         <div className="flex justify-center pt-3 pb-1">
                             <div className="w-10 h-1.5 bg-stone-300 rounded-full"/>
                         </div>
 
                         <div className="px-6 pb-8 pt-2">
-                            {/* タイトル */}
                             <div className="text-center mb-5">
                                 <p className="text-xs font-bold text-amber-500 tracking-widest mb-1">✨ あたらしい ことば ✨</p>
                                 <div className="text-6xl mb-1">{wordObj.icon}</div>
                                 <div className="text-3xl font-kyokasho text-stone-800 tracking-widest font-bold">{wordObj.word}</div>
                             </div>
 
-                            {/* 空欄ボックス */}
                             <div className="flex justify-center gap-3 mb-2">
                                 {allChars.map((c, i) => {
                                     if (!isTargetChar(c)) {
@@ -1607,7 +1558,6 @@
 
                             <p className="text-center text-xs text-stone-400 font-bold mb-6">↑ カードをタップして はめよう！</p>
 
-                            {/* 文字カード */}
                             <div className="flex justify-center gap-4 flex-wrap">
                                 {uniqueTargetChars.map(char => {
                                     const shot = bestShots[char];
@@ -1630,7 +1580,6 @@
                             </div>
                         </div>
 
-                        {/* 完成演出オーバーレイ */}
                         {celebrating && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 animate-celebrate-in z-20 rounded-3xl">
                                 <div className="text-7xl mb-3" style={{ animation: 'bounce 0.6s infinite' }}>{wordObj.icon}</div>
@@ -1653,7 +1602,7 @@
             const [activeTab, setActiveTab] = useState('home'); 
             const [selectedKanji, setSelectedKanji] = useState(null);
             const [bestShots, setBestShots] = useState({});
-            const [settings, setSettings] = useState({ targetCount: 5, traceColor: 'sky', blankColor: 'green', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], soundEnabled: true, traceTarget: 3, blankTarget: 2, testTarget: 1 });
+            const [settings, setSettings] = useState({ targetCount: 5, traceColor: 'sky', blankColor: 'green', testColor: 'purple', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], soundEnabled: true, traceTarget: 2, blankTarget: 2, testTarget: 1 });
             
             const [newWordAlert, setNewWordAlert] = useState(null);
             const [wordRegisterTarget, setWordRegisterTarget] = useState(null);
@@ -1711,61 +1660,58 @@
             };
 
             useEffect(() => {
-    const load = async () => {
-        if (currentUser && typeof supabaseClient !== 'undefined') {
-            try {
-                await supabaseClient.from('profiles').upsert({
-                    id: String(currentUser.id),
-                    name: currentUser.name,
-                    icon: currentUser.icon,
-                    color_label: currentUser.color?.label || 'Blue'
-                });
-            } catch(e) { console.error("名簿の同期エラー:", e); }
-
-            // Supabaseからbest_shotsを読み戻す
-            try {
-                const { data: remoteShots } = await supabaseClient
-                    .from('best_shots')
-                    .select('*')
-                    .eq('user_id', String(currentUser.id));
-
-                if (remoteShots && remoteShots.length > 0) {
-                    for (const remote of remoteShots) {
-                        const local = await db.bestShots.get({
-                            userId: currentUser.id,
-                            char: remote.char
-                        });
-                        // ローカルにない or Supabaseの方が新しければ上書き
-                        if (!local || remote.timestamp > local.timestamp) {
-                            await db.bestShots.put({
-                                userId: currentUser.id,
-                                char: remote.char,
-                                strokes: remote.strokes_data,
-                                type: remote.type,
-                                timestamp: remote.timestamp,
-                                image: local?.image || null
+                const load = async () => {
+                    if (currentUser && typeof supabaseClient !== 'undefined') {
+                        try {
+                            await supabaseClient.from('profiles').upsert({
+                                id: String(currentUser.id),
+                                name: currentUser.name,
+                                icon: currentUser.icon,
+                                color_label: currentUser.color?.label || 'Blue'
                             });
-                        }
+                        } catch(e) { console.error("名簿の同期エラー:", e); }
+
+                        try {
+                            const { data: remoteShots } = await supabaseClient
+                                .from('best_shots')
+                                .select('*')
+                                .eq('user_id', String(currentUser.id));
+
+                            if (remoteShots && remoteShots.length > 0) {
+                                for (const remote of remoteShots) {
+                                    const local = await db.bestShots.get({
+                                        userId: currentUser.id,
+                                        char: remote.char
+                                    });
+                                    if (!local || remote.timestamp > local.timestamp) {
+                                        await db.bestShots.put({
+                                            userId: currentUser.id,
+                                            char: remote.char,
+                                            strokes: remote.strokes_data,
+                                            type: remote.type,
+                                            timestamp: remote.timestamp,
+                                            image: local?.image || null
+                                        });
+                                    }
+                                }
+                            }
+                        } catch(e) { console.error("Supabaseからの読み戻しエラー:", e); }
                     }
-                }
-            } catch(e) { console.error("Supabaseからの読み戻しエラー:", e); }
-        }
 
-        const savedSettings = await db.settings.get(currentUser.id);
-        if (savedSettings) setSettings(savedSettings);
+                    const savedSettings = await db.settings.get(currentUser.id);
+                    if (savedSettings) setSettings(prev => ({ ...prev, ...savedSettings }));
 
-        const shots = await db.bestShots.where('userId').equals(currentUser.id).toArray();
-        const map = {};
-        shots.forEach(s => map[s.char] = s);
-        setBestShots(map);
+                    const shots = await db.bestShots.where('userId').equals(currentUser.id).toArray();
+                    const map = {};
+                    shots.forEach(s => map[s.char] = s);
+                    setBestShots(map);
 
-        const reads = await db.readWords.where('userId').equals(currentUser.id).toArray();
-        setReadWords(reads.map(r => r.wordId));
-    };
-    load();
-}, [currentUser]);
+                    const reads = await db.readWords.where('userId').equals(currentUser.id).toArray();
+                    setReadWords(reads.map(r => r.wordId));
+                };
+                load();
+            }, [currentUser]);
 
-            // useCallback: currentUser.id が変わったときだけ関数を作り直す
             const saveSettingsWrapper = useCallback(async (newSettings) => {
                 setSettings(newSettings);
                 await db.settings.put({ userId: currentUser.id, ...newSettings });
@@ -1798,7 +1744,6 @@
                 await db.practices.where({ userId: currentUser.id, char: char }).delete();
             };
 
-            // ことばずかん登録完了ハンドラ
             const handleWordRegistered = async (wordId) => {
                 await db.readWords.put({ userId: currentUser.id, wordId: wordId });
                 setReadWords(prev => [...prev, wordId]);
@@ -1920,6 +1865,13 @@
                 return news;
             }, [bestShots, durationMs, now]);
 
+            // ② ひらがな一覧の枠色を3モード対応で返すヘルパー関数
+            const getKanaThemeColor = (shotType) => {
+                if (shotType === 'trace') return COLOR_OPTIONS.find(c => c.id === settings.traceColor)?.class || COLOR_OPTIONS[0].class;
+                if (shotType === 'blank') return COLOR_OPTIONS.find(c => c.id === settings.blankColor)?.class || COLOR_OPTIONS[1].class;
+                // test
+                return COLOR_OPTIONS.find(c => c.id === settings.testColor)?.class || COLOR_OPTIONS[3].class;
+            };
 
             const renderKanaTable = (tableData) => {
                 return (
@@ -1950,7 +1902,8 @@
                                         let displayContent;
                                         
                                         if (shot) {
-                                            const themeColor = shot.type === 'trace' ? COLOR_OPTIONS.find(c => c.id === settings.traceColor).class : COLOR_OPTIONS.find(c => c.id === settings.blankColor).class;
+                                            // ② 3モード対応の枠色
+                                            const themeColor = getKanaThemeColor(shot.type);
                                             colorClass = `${themeColor} bg-white border-2 shadow-sm`;
                                             if (isSelected) colorClass += " ring-2 ring-amber-400 ring-offset-1";
                                             
@@ -1994,7 +1947,6 @@
             return (
                 <div className="p-4 max-w-4xl mx-auto min-h-screen relative pt-20 animate-fade-in">
                     
-                    {/* ▼ ことばずかん登録モーダル */}
                     {wordRegisterTarget && (
                         <WordRegisterModal
                             wordObj={wordRegisterTarget}
@@ -2006,16 +1958,17 @@
                     
                     <div className="absolute top-4 left-0 w-full px-4 flex justify-between items-center gap-3 z-40">
                         <div className="flex gap-2 shrink-0">
+                            {/* ③ ひらがな・ことばずかんタブでも「ホーム」を常に表示 */}
                             <button 
                                 onClick={() => {
-                                    if(activeTab !== 'home') setActiveTab('home');
-                                    else window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                                    setActiveTab('home');
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
                                 }} 
                                 className={`flex items-center gap-1.5 text-stone-600 bg-white shadow-sm px-3 py-2 rounded-lg font-bold text-sm border-2 transition-transform hover:bg-stone-50 active:scale-95 animate-pop-in
                                     ${activeTab === 'home' ? 'border-amber-200 bg-[#faf8f5]' : 'border-[#e8e4db]'}`}
                             >
                                 <span className="text-base leading-none">🏠</span>
-                                <span className="hidden sm:inline">{activeTab === 'home' ? 'ホーム' : 'もどる'}</span>
+                                <span className="hidden sm:inline">ホーム</span>
                             </button>
                             <button onClick={() => setView('admin')} title="せってい" className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 bg-white shadow-sm rounded-lg font-bold border-2 border-[#e8e4db] hover:bg-stone-50 active:scale-95 transition-transform">
                                 <span className="text-lg sm:text-xl leading-none">⚙️</span>
@@ -2124,7 +2077,6 @@
                     {activeTab === 'home' && (
                         <div className="flex flex-col gap-8 pb-12 w-full animate-fade-in">
 
-                            {/* ▼ タイトルエリア：ふわふわ星の装飾を追加 */}
                             <div className="flex justify-center w-full mt-2 mb-4">
                                 <div className="relative inline-block mt-6">
                                     <span className="absolute -top-7 -left-3 text-2xl animate-bounce" style={{animationDuration:'2.2s'}}>⭐</span>
@@ -2147,7 +2099,6 @@
                                 </div>
                             </div>
 
-                            {/* ▼ 進捗バー：集めた文字数を星で表示 */}
                             <div className="w-full max-w-xs mx-auto bg-white rounded-2xl px-5 py-4 border-2 border-amber-100 shadow-sm">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-xs font-bold text-amber-500">🏆 あつめた もじ</span>
@@ -2174,7 +2125,6 @@
                                 )}
                             </div>
 
-                            {/* ▼ 額縁エリア：パステルカラーの可愛いフレームに */}
                             <div className="w-full flex justify-center gap-3 md:gap-6 flex-wrap">
                                 {[
                                     { bg: '#fff0f6', border: '#ffb8d9', shadow: '#ffb8d988', star: '🌸', rotate: '-rotate-2' },
@@ -2194,14 +2144,12 @@
                                                     boxShadow: `0 8px 20px -4px ${theme.shadow}`
                                                 }}
                                             >
-                                                {/* 星バッジ */}
                                                 <div
                                                     className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md text-base border-2"
                                                     style={{ borderColor: theme.border }}
                                                 >
                                                     {theme.star}
                                                 </div>
-                                                {/* 番号 */}
                                                 <div
                                                     className="absolute -bottom-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-sm"
                                                     style={{ backgroundColor: theme.border }}
@@ -2226,7 +2174,6 @@
                                 })}
                             </div>
 
-                            {/* ▼ 空の状態：まだ何も集めていないときのガイド */}
                             {totalCollected === 0 && (
                                 <div className="text-center py-6 animate-fade-in">
                                     <div className="text-5xl mb-3 animate-bounce">✏️</div>
@@ -2237,7 +2184,6 @@
                                 </div>
                             )}
 
-                            {/* ▼ NEWセクション：グラデーションバッジで目立たせる */}
                             {newKanjis.length > 0 && (
                                 <div className="rounded-2xl p-3 pt-9 border-2 border-amber-200 shadow-sm relative overflow-visible mt-2 max-w-4xl mx-auto w-full"
                                     style={{ background: 'linear-gradient(135deg, #fffbeb, #fff7ed)' }}
@@ -2249,7 +2195,8 @@
                                     </div>
                                     <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1.5 md:gap-2">
                                         {newKanjis.map(item => {
-                                            const themeColor = item.shot.type === 'trace' ? COLOR_OPTIONS.find(c => c.id === settings.traceColor).class : COLOR_OPTIONS.find(c => c.id === settings.blankColor).class;
+                                            // ② NEWセクションも3モード対応
+                                            const themeColor = getKanaThemeColor(item.shot.type);
                                             return (
                                                 <div key={`col-new-${item.char}`} id={`col-new-${item.char}`} onClick={() => { setSelectedKanji(item); setView('practice'); }} className={`relative aspect-square rounded-xl cursor-pointer hover:scale-110 shadow-sm flex items-center justify-center transition-all border-2 bg-white ${themeColor}`}>
                                                     <div className="w-full h-full overflow-hidden rounded-lg p-0.5 pointer-events-none">
@@ -2267,7 +2214,6 @@
                     {activeTab === 'hiragana' && (
                         <div className="flex flex-col gap-6 pb-12 w-full animate-fade-in">
 
-                            {/* ▼ 進捗バー（ひらがなタブ用） */}
                             <div className="w-full bg-white rounded-2xl px-5 py-3 border-2 border-amber-100 shadow-sm flex items-center gap-4">
                                 <span className="text-lg shrink-0">🏆</span>
                                 <div className="flex-1">
@@ -2281,7 +2227,6 @@
                                 </div>
                             </div>
 
-                            {/* ▼ ギャラリートレイ：パステルカラーで統一 */}
                             <div className="rounded-2xl p-4 border-2 border-amber-100 shadow-sm sticky top-20 z-30 backdrop-blur-sm" style={{ background: 'linear-gradient(135deg, #fffbeb, #fff7ed)' }}>
                                 <h3 className="text-center text-amber-600 font-bold text-xs mb-3 flex items-center justify-center gap-2">
                                     <Sparkles className="w-3 h-3"/> ギャラリーにかざる 4まい <Sparkles className="w-3 h-3"/>
@@ -2327,7 +2272,6 @@
                                 </p>
                             </div>
 
-                            {/* ▼ 五十音表（あ〜ん） */}
                             <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border-2 border-sky-100 w-full">
                                 <div className="flex items-center justify-center gap-2 mb-6">
                                     <span className="text-2xl">🌸</span>
@@ -2337,7 +2281,6 @@
                                 {renderKanaTable(SEION_TABLE)}
                             </div>
 
-                            {/* ▼ 五十音表（濁音・半濁音・拗音） */}
                             <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border-2 border-purple-100 w-full">
                                 <div className="flex items-center justify-center gap-2 mb-6">
                                     <span className="text-2xl">⚡</span>
@@ -2369,10 +2312,8 @@
                                                     ? 'bg-gradient-to-b from-amber-50 to-white border-amber-400 shadow-lg animate-unlock-glow'
                                                     : 'bg-white border-amber-200 shadow-sm'}`}
                                         >
-                                            {/* 上部カラーバー */}
                                             <div className={`w-full h-2.5 ${isUnread ? 'bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-400' : 'bg-gradient-to-r from-amber-300 to-orange-300'}`}/>
 
-                                            {/* NEWバッジ */}
                                             {wordObj.isNew && !isUnread && (
                                                 <div className="absolute top-2.5 left-0 text-white text-[9px] font-bold px-2 py-0.5 rounded-r-full shadow-sm z-20"
                                                     style={{ background: 'linear-gradient(90deg, #f59e0b, #f97316)' }}>
@@ -2388,14 +2329,12 @@
                                                 <div className="text-2xl font-kyokasho text-stone-800 tracking-widest mt-2 leading-snug">{wordObj.word}</div>
 
                                                 {isUnread ? (
-                                                    /* 未登録：「登録しよう！」ボタン風バッジ */
                                                     <div className="mt-2.5 mb-1">
                                                         <div className="inline-flex items-center gap-1 bg-amber-400 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md animate-pulse">
                                                             🔓 タップして とうろく！
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    /* 登録済み：自分の文字カード */
                                                     <div className="flex justify-center gap-1 mt-2.5 flex-wrap">
                                                         {wordObj.word.split('').map((char, i) => {
                                                             if (!isTargetChar(char)) return (
@@ -2415,7 +2354,6 @@
                                         </div>
                                     );
                                 } else {
-                                    // ロック中：あと何文字かけば解放されるか計算
                                     const charsNeeded = wordObj.word.split('').filter(c => isTargetChar(c) && !bestShots[c]);
                                     const totalChars = wordObj.word.split('').filter(c => isTargetChar(c)).length;
                                     const doneChars = totalChars - charsNeeded.length;
@@ -2429,7 +2367,6 @@
                                                 <div className="text-3xl opacity-20 mt-1">🔒</div>
                                                 <div className="text-2xl font-kyokasho text-stone-300 tracking-widest mt-2">{wordObj.word.replace(/[\u3040-\u309f\u4e00-\u9faf]/g, '？')}</div>
 
-                                                {/* ヒント：あと何文字 */}
                                                 {charsNeeded.length > 0 && (
                                                     <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl px-2 py-1.5 inline-block">
                                                         <span className="text-[10px] font-bold text-amber-600">
