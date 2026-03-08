@@ -1173,8 +1173,55 @@
             const [newIcon, setNewIcon] = useState(ICON_OPTIONS[0]);
             const [newColor, setNewColor] = useState(USER_COLOR_OPTIONS[0]);
 
+            const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
             useEffect(() => {
-                db.users.toArray().then(setUsers);
+                const loadUsers = async () => {
+                    setIsLoadingUsers(true);
+
+                    // まずローカルのDexieから読む
+                    const localUsers = await db.users.toArray();
+                    setUsers(localUsers);
+
+                    // 次にSupabaseのprofilesも取得してマージ
+                    try {
+                        const { data: remoteProfiles } = await supabaseClient
+                            .from('profiles')
+                            .select('*');
+
+                        if (remoteProfiles && remoteProfiles.length > 0) {
+                            const localIds = localUsers.map(u => String(u.id));
+                            const newFromRemote = [];
+
+                            for (const profile of remoteProfiles) {
+                                if (!localIds.includes(String(profile.id))) {
+                                    // Supabaseにいてローカルにいないユーザーを復元
+                                    const colorObj = USER_COLOR_OPTIONS.find(
+                                        c => c.label === profile.color_label
+                                    ) || USER_COLOR_OPTIONS[0];
+                                    const restoredUser = {
+                                        id: profile.id,
+                                        name: profile.name,
+                                        icon: profile.icon,
+                                        color: colorObj
+                                    };
+                                    await db.users.put(restoredUser);
+                                    newFromRemote.push(restoredUser);
+                                }
+                            }
+
+                            if (newFromRemote.length > 0) {
+                                // 新しく復元されたユーザーを追加して再表示
+                                setUsers(prev => [...prev, ...newFromRemote]);
+                            }
+                        }
+                    } catch(e) {
+                        console.error("Supabaseからのユーザー読み込みエラー:", e);
+                    }
+
+                    setIsLoadingUsers(false);
+                };
+                loadUsers();
             }, []);
 
             const handleStartCreate = () => {
@@ -1203,11 +1250,8 @@
                     setIsCreating(false);
                     setEditingUser(null);
                 } else {
-                    // crypto.randomUUID() = 世界中で唯一のランダムなIDを生成
-                    // 例：「a3f8bc12-d9e2-ff44-b71c-aa09c3f81234」
-                    // これにより別端末でも同じIDを引き継げる
                     const newUser = { 
-                        id: crypto.randomUUID(),
+                        id: crypto.randomUUID(),  // 世界で唯一のIDを自動生成
                         name: newName.trim(), 
                         icon: newIcon, 
                         color: newColor 
@@ -1260,7 +1304,13 @@
                 <div className="p-6 max-w-md mx-auto min-h-screen flex flex-col items-center justify-center animate-fade-in">
                     <h1 className="text-3xl font-bold mb-8 text-sky-700 font-kyokasho">だれが あそぶ？</h1>
                     <div className="w-full space-y-4 mb-8">
-                        {users.length === 0 && <div className="text-center text-stone-400 font-bold py-8">まだ だれも いません</div>}
+                        {isLoadingUsers && (
+                            <div className="text-center text-stone-400 font-bold py-8 flex flex-col items-center gap-3">
+                                <Loader className="w-8 h-8 text-sky-400"/>
+                                <span>よみこみちゅう…</span>
+                            </div>
+                        )}
+                        {!isLoadingUsers && users.length === 0 && <div className="text-center text-stone-400 font-bold py-8">まだ だれも いません</div>}
                         {users.map(user => (
                             <div key={user.id} className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-sm border-2 transition-transform hover:-translate-y-1 ${user.color.class} ${user.color.border}`}>
                                 <div onClick={() => onSelect(user)} className="flex items-center gap-4 flex-1 cursor-pointer active:scale-95 transition-transform">
