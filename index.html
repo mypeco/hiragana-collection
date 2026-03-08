@@ -631,6 +631,29 @@
                                     <input type="file" accept=".json" ref={fileInputRef} onChange={handleImport} className="hidden" />
                                 </div>
                             </div>
+
+                            {/* 別の端末で使うときの説明 */}
+                            <div className="bg-sky-50 p-4 rounded-xl border border-sky-200 shadow-sm">
+                                <h3 className="font-bold text-lg mb-2 text-sky-800 flex items-center gap-2">📱 べつの端末でつかうとき</h3>
+                                <div className="space-y-3 text-sm text-sky-700">
+                                    <div className="flex gap-2 items-start">
+                                        <span className="shrink-0 font-bold bg-sky-400 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">1</span>
+                                        <p>この端末の「だれがあそぶ？」画面で ✏️ ボタンを押して、<strong>🔑 IDをコピー</strong>してね</p>
+                                    </div>
+                                    <div className="flex gap-2 items-start">
+                                        <span className="shrink-0 font-bold bg-sky-400 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">2</span>
+                                        <p>べつの端末でアプリをひらいて、<strong>「あたらしく つくる」</strong>でプロフィールを作るよ</p>
+                                    </div>
+                                    <div className="flex gap-2 items-start">
+                                        <span className="shrink-0 font-bold bg-sky-400 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">3</span>
+                                        <p>なまえやアイコンを入れて、いちばん下の<strong>「IDをもっているひとはここに入れてね」</strong>にコピーしたIDをはり付けて「ほぞんする」！</p>
+                                    </div>
+                                    <div className="p-3 bg-white rounded-lg border border-sky-200 text-xs text-stone-500 leading-relaxed">
+                                        ✅ おなじIDでログインすると、クラウドに保存された練習データが自動で読み込まれるよ。<br/>
+                                        ⚠️ べつの端末にすでにデータがある場合、新しいほうで上書きされることがあるよ。
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -647,7 +670,11 @@
             const [practiceMode, setPracticeMode] = useState('trace'); 
             const isTestMode = practiceMode === 'test';
             
-            const [sessionLogs, setSessionLogs] = useState({ trace: 0, blank: 0, test: 0 });
+            const sessionLogs = useMemo(() => ({
+                trace: practices.filter(p => p.type === 'trace').length,
+                blank: practices.filter(p => p.type === 'blank').length,
+                test:  practices.filter(p => p.type === 'test').length,
+            }), [practices]);
             const [strokeWarning, setStrokeWarning] = useState(false); 
 
             const [practices, setPractices] = useState([]);
@@ -930,7 +957,7 @@
                         
                         <div className="w-full flex justify-between items-start mb-2 px-3 gap-2">
                             <div className="flex flex-col gap-2 shrink-0">
-                                <button onClick={onBack} className="text-stone-500 flex items-center gap-1 text-sm bg-white px-3 py-1.5 rounded-full mt-1 hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all"><span className="text-base leading-none">🏠</span> もどる</button>
+                                <button onClick={onBack} className="text-stone-500 flex items-center gap-1 text-sm bg-white px-3 py-1.5 rounded-full mt-1 hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all"><span className="text-base leading-none">↩️</span> もどる</button>
                                 <div className="flex gap-2">
                                     <a href="admin.html" onClick={(e) => { e.preventDefault(); onOpenAdmin(); }} className="text-stone-500 flex items-center justify-center text-xl bg-white w-10 h-10 rounded-full hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all leading-none">⚙️</a>
                                     <button
@@ -1080,7 +1107,6 @@
                             </div>
 
                             <div ref={canvasContainerRef} className="relative group w-56 md:w-80 shrink-0">
-                                <span className="absolute -top-6 left-2 text-gray-500 text-xs font-bold whitespace-nowrap">ここに かこう！</span>
                                 
                                 <div className="absolute -top-10 right-0 flex bg-white rounded-full shadow-sm border p-0.5 z-20 overflow-hidden">
                                     {(() => {
@@ -1216,34 +1242,62 @@
             const [newName, setNewName] = useState('');
             const [newIcon, setNewIcon] = useState(ICON_OPTIONS[0]);
             const [newColor, setNewColor] = useState(USER_COLOR_OPTIONS[0]);
+            const [newProfileId, setNewProfileId] = useState(''); // 新規作成時のID入力用
+            const [copiedId, setCopiedId] = useState(null); // コピー完了のフィードバック用
 
             const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
+            // IDをクリップボードにコピーする
+            const copyId = (profileId) => {
+                if (!profileId) return;
+                navigator.clipboard.writeText(profileId).then(() => {
+                    setCopiedId(profileId);
+                    setTimeout(() => setCopiedId(null), 2000);
+                }).catch(() => {
+                    // clipboard APIが使えない環境用のフォールバック
+                    const el = document.createElement('textarea');
+                    el.value = profileId;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                    setCopiedId(profileId);
+                    setTimeout(() => setCopiedId(null), 2000);
+                });
+            };
 
             useEffect(() => {
                 const loadUsers = async () => {
                     setIsLoadingUsers(true);
-                    const localUsers = await db.users.toArray();
+                    let localUsers = await db.users.toArray();
+
+                    // 既存ユーザーにprofileIdがなければ自動でUUIDを割り振る
+                    for (const user of localUsers) {
+                        if (!user.profileId) {
+                            const newId = crypto.randomUUID();
+                            const updated = { ...user, profileId: newId };
+                            await db.users.put(updated);
+                        }
+                    }
+                    localUsers = await db.users.toArray();
                     setUsers(localUsers);
                     try {
                         const { data: remoteProfiles } = await supabaseClient.from('profiles').select('*');
                         if (remoteProfiles) {
-                            const remoteIds = remoteProfiles.map(p => String(p.id));
-                            for (const localUser of localUsers) {
-                                if (!remoteIds.includes(String(localUser.id))) {
-                                    await db.users.delete(localUser.id);
-                                    await db.bestShots.where('userId').equals(localUser.id).delete();
-                                    await db.settings.where({ userId: localUser.id }).delete();
-                                    await db.readWords.where({ userId: localUser.id }).delete();
-                                }
-                            }
-                            const localIds = localUsers.map(u => String(u.id));
-                            const newFromRemote = [];
+                            // ローカルのprofileId一覧（UUIDで比較）
+                            const localProfileIds = localUsers.map(u => u.profileId).filter(Boolean);
+
+                            // クラウドにあってローカルにないプロフィールを復元する
                             for (const profile of remoteProfiles) {
-                                if (!localIds.includes(String(profile.id))) {
+                                if (!localProfileIds.includes(String(profile.id))) {
                                     const colorObj = USER_COLOR_OPTIONS.find(c => c.label === profile.color_label) || USER_COLOR_OPTIONS[0];
-                                    const restoredUser = { id: profile.id, name: profile.name, icon: profile.icon, color: colorObj };
-                                    await db.users.put(restoredUser);
-                                    newFromRemote.push(restoredUser);
+                                    const restoredUser = { 
+                                        name: profile.name, 
+                                        icon: profile.icon, 
+                                        color: colorObj,
+                                        profileId: String(profile.id) // UUIDをprofileIdとして復元
+                                    };
+                                    await db.users.add(restoredUser);
                                 }
                             }
                             const updatedUsers = await db.users.toArray();
@@ -1259,6 +1313,7 @@
                 setNewName('');
                 setNewIcon(ICON_OPTIONS[0]);
                 setNewColor(USER_COLOR_OPTIONS[0]);
+                setNewProfileId('');
                 setEditingUser(null);
                 setIsCreating(true);
             };
@@ -1275,20 +1330,25 @@
             const handleSave = async () => {
                 if (!newName.trim()) return;
                 if (editingUser) {
+                    // 編集時はprofileIdを変更しない（そのまま引き継ぐ）
                     const updatedUser = { ...editingUser, name: newName.trim(), icon: newIcon, color: newColor };
                     await db.users.put(updatedUser);
                     setUsers(prev => prev.map(u => u.id === editingUser.id ? updatedUser : u));
                     setIsCreating(false);
                     setEditingUser(null);
                 } else {
-                    const newUser = { name: newName.trim(), icon: newIcon, color: newColor };
+                    // 入力されたIDがあればそれを使う、なければ自動でUUIDを生成する
+                    const profileId = newProfileId.trim() || crypto.randomUUID();
+                    const newUser = { name: newName.trim(), icon: newIcon, color: newColor, profileId };
                     const id = await db.users.add(newUser);
                     onSelect({ ...newUser, id });
                 }
             };
 
-            const handleDeleteUser = async (userId, userName, e) => {
+            const handleDeleteUser = async (userId, userName, userProfileId, e) => {
                 e.stopPropagation(); 
+                // ③ SupabaseではprofileId（設定済みの場合）またはuserIdを使う
+                const supabaseKey = userProfileId || String(userId);
                 if (window.confirm(`${userName} の データを ぜんぶ けしますか？\n（けした データは もとにもどせません）`)) {
                     await db.users.delete(userId);
                     await db.settings.where({ userId: userId }).delete();
@@ -1300,11 +1360,11 @@
                         await supabaseClient
                             .from('profiles')
                             .delete()
-                            .eq('id', String(userId));
+                            .eq('id', supabaseKey);
                         await supabaseClient
                             .from('best_shots')
                             .delete()
-                            .eq('user_id', String(userId));
+                            .eq('user_id', supabaseKey);
                     } catch(e) {
                         console.error("Supabase削除エラー:", e);
                     }
@@ -1332,6 +1392,37 @@
                                 {USER_COLOR_OPTIONS.map(color => <button key={color.label} onClick={() => setNewColor(color)} className={`w-12 h-12 rounded-full ${color.class} ${color.border} shadow-sm border-2 transition-all flex items-center justify-center ${newColor.label === color.label ? 'ring-4 ring-stone-400 scale-110' : 'opacity-50 hover:opacity-100'}`} />)}
                             </div>
                         </div>
+                        {/* 新規作成時：IDを入力できる欄（他の端末のデータを引き継ぐとき用） */}
+                        {!editingUser && (
+                            <div className="w-full mb-6">
+                                <div className="flex items-center gap-2 mb-2 justify-center">
+                                    <p className="text-xs font-bold text-stone-400">🔑 すでにIDをもっているひとは ここに入れてね</p>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="IDをもっていないひとは からっぽでOK！"
+                                    value={newProfileId}
+                                    onChange={e => setNewProfileId(e.target.value)}
+                                    className="w-full text-center text-xs p-3 rounded-xl border-2 border-stone-200 focus:border-sky-300 outline-none font-mono text-stone-500 bg-stone-50 shadow-inner"
+                                />
+                                <p className="text-[11px] text-stone-300 text-center mt-1.5">からっぽのままだと あたらしいIDが じどうでつくられるよ</p>
+                            </div>
+                        )}
+                        {/* 編集時のみ：プロフィールIDを表示（変更不可） */}
+                        {editingUser?.profileId && (
+                            <div className="w-full mb-6 flex flex-col items-center gap-2">
+                                <p className="text-xs text-stone-400 font-bold">🔑 じぶんのID（かえられないよ）</p>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs text-stone-400 select-all">{editingUser.profileId}</span>
+                                    <button
+                                        onClick={() => copyId(editingUser.profileId)}
+                                        className="shrink-0 px-2 py-1 rounded-lg font-bold text-xs transition-all bg-stone-100 text-stone-500 hover:bg-sky-100 hover:text-sky-600 active:scale-95"
+                                    >
+                                        {copiedId === editingUser.profileId ? '✅ コピーした！' : '📋 コピー'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         <div className="flex gap-4 w-full">
                             <button onClick={() => { setIsCreating(false); setEditingUser(null); }} className="flex-1 py-4 rounded-full font-bold text-stone-500 bg-stone-100 active:scale-95 transition-transform">もどる</button>
                             <button onClick={handleSave} disabled={!newName.trim()} className="flex-1 py-4 rounded-full font-bold text-white bg-sky-500 disabled:opacity-50 active:scale-95 shadow-md transition-transform">ほぞんする</button>
@@ -1346,19 +1437,22 @@
                     <div className="w-full space-y-4 mb-8">
                         {users.length === 0 && <div className="text-center text-stone-400 font-bold py-8">まだ だれも いません</div>}
                         {users.map(user => (
-                            <div key={user.id} className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-sm border-2 transition-transform hover:-translate-y-1 ${user.color.class} ${user.color.border}`}>
-                                <div onClick={() => onSelect(user)} className="flex items-center gap-4 flex-1 cursor-pointer active:scale-95 transition-transform">
-                                    <div className="text-4xl bg-white/70 w-16 h-16 flex items-center justify-center rounded-full shadow-sm shrink-0">{user.icon}</div>
-                                    <span className="text-2xl font-bold font-kyokasho tracking-widest">{user.name}</span>
+                            <div key={user.id} className={`w-full flex flex-col p-4 rounded-2xl shadow-sm border-2 transition-transform hover:-translate-y-1 ${user.color.class} ${user.color.border}`}>
+                                <div className="flex items-center justify-between">
+                                    <div onClick={() => onSelect(user)} className="flex items-center gap-4 flex-1 cursor-pointer active:scale-95 transition-transform">
+                                        <div className="text-4xl bg-white/70 w-16 h-16 flex items-center justify-center rounded-full shadow-sm shrink-0">{user.icon}</div>
+                                        <span className="text-2xl font-bold font-kyokasho tracking-widest">{user.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                                        <button onClick={(e) => handleStartEdit(user, e)} className="w-10 h-10 rounded-full bg-white/50 text-stone-500 hover:bg-sky-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="プロフィールをなおす">
+                                            <EditIcon className="w-5 h-5"/>
+                                        </button>
+                                        <button onClick={(e) => handleDeleteUser(user.id, user.name, user.profileId, e)} className="w-10 h-10 rounded-full bg-white/50 text-stone-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="このデータをけす">
+                                            <X className="w-5 h-5"/>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0 ml-2">
-                                    <button onClick={(e) => handleStartEdit(user, e)} className="w-10 h-10 rounded-full bg-white/50 text-stone-500 hover:bg-sky-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="プロフィールをなおす">
-                                        <EditIcon className="w-5 h-5"/>
-                                    </button>
-                                    <button onClick={(e) => handleDeleteUser(user.id, user.name, e)} className="w-10 h-10 rounded-full bg-white/50 text-stone-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="このデータをけす">
-                                        <X className="w-5 h-5"/>
-                                    </button>
-                                </div>
+                                {/* プロフィールIDの表示は編集画面に移動したため、ここには表示しない */}
                             </div>
                         ))}
                     </div>
@@ -1388,7 +1482,11 @@
             ['だ', 'ぢ', 'づ', 'で', 'ど'],
             ['ば', 'び', 'ぶ', 'べ', 'ぼ'],
             ['ぱ', 'ぴ', 'ぷ', 'ぺ', 'ぽ'],
-            ['ゃ', 'ゅ', 'ょ', 'っ', null]
+            ['ゃ', 'ゅ', 'ょ', 'っ', null],
+            ['🐰', '🐶', '🐱', '🐸', '🐼'],
+            ['🌷', '🌸', '🌈', '⭐', '🌙'],
+            ['🎀', '👑', '💎', '🏆', '🎵'],
+            ['🍎', '🍓', '🎂', '🍦', '🍭'],
         ];
 
         const emitParticles = async (targetElement) => {
@@ -1599,10 +1697,11 @@
 
         const MainApp = ({ currentUser, onLogout }) => {
             const [view, setView] = useState('grid');
+            const [previousView, setPreviousView] = useState('grid'); // ①管理画面から戻る先を記憶する
             const [activeTab, setActiveTab] = useState('home'); 
             const [selectedKanji, setSelectedKanji] = useState(null);
             const [bestShots, setBestShots] = useState({});
-            const [settings, setSettings] = useState({ targetCount: 5, traceColor: 'sky', blankColor: 'green', testColor: 'purple', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], soundEnabled: true, traceTarget: 2, blankTarget: 2, testTarget: 1 });
+            const [settings, setSettings] = useState({ targetCount: 5, traceColor: 'sky', blankColor: 'green', testColor: 'purple', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [], soundEnabled: true, traceTarget: 2, blankTarget: 2, testTarget: 1 });
             
             const [newWordAlert, setNewWordAlert] = useState(null);
             const [wordRegisterTarget, setWordRegisterTarget] = useState(null);
@@ -1614,8 +1713,20 @@
             const [isScrolling, setIsScrolling] = useState(false);
 
             const addHallOfFame = (char) => {
-                if (navigator.vibrate) navigator.vibrate(50); 
+                // 絵文字かどうか判定（ひらがな・漢字以外は絵文字とみなす）
+                const isEmoji = !/[\u3040-\u309F\u4e00-\u9faf]/.test(char);
+                if (!isEmoji && !bestShots[char]) {
+                    alert("まだ れんしゅうしていない もじは かざれないよ！\nさきに れんしゅうしてね 🎉");
+                    return;
+                }
+                if (navigator.vibrate) navigator.vibrate(50);
                 const current = settings.hallOfFame || [];
+                // すでに飾っている場合は取り外す
+                const existingIdx = current.indexOf(char);
+                if (existingIdx !== -1) {
+                    saveSettingsWrapper({ ...settings, hallOfFame: current.filter((_, i) => i !== existingIdx) });
+                    return;
+                }
                 if (current.length < 4) {
                     saveSettingsWrapper({ ...settings, hallOfFame: [...current, char] });
                 } else {
@@ -1629,12 +1740,34 @@
                 saveSettingsWrapper({ ...settings, hallOfFame: current.filter((_, i) => i !== indexToRemove) });
             };
 
-            const handleTouchStart = (char, e) => {
+            // ① 濁音エリア用 20枠ギャラリー
+            const addHallOfFame2 = (char) => {
+                if (!bestShots[char]) {
+                    alert("まだ れんしゅうしていない もじは かざれないよ！\nさきに れんしゅうしてね 🎉");
+                    return;
+                }
+                if (navigator.vibrate) navigator.vibrate(50);
+                const current = settings.hallOfFame2 || [];
+                if (current.includes(char)) { alert("もう かざっているよ！"); return; }
+                if (current.length < 20) {
+                    saveSettingsWrapper({ ...settings, hallOfFame2: [...current, char] });
+                } else {
+                    alert("かざれるのは 20枚 までだよ！");
+                }
+            };
+
+            const removeHallOfFame2 = (indexToRemove) => {
+                if (navigator.vibrate) navigator.vibrate(50);
+                const current = settings.hallOfFame2 || [];
+                saveSettingsWrapper({ ...settings, hallOfFame2: current.filter((_, i) => i !== indexToRemove) });
+            };
+
+            const handleTouchStart = (char, e, onLongPressOverride) => {
                 setIsScrolling(false);
                 isLongPressedRef.current = false;
                 longPressTimerRef.current = setTimeout(() => {
                     isLongPressedRef.current = true;
-                    addHallOfFame(char); 
+                    (onLongPressOverride || addHallOfFame)(char);
                 }, 500); 
             };
 
@@ -1661,10 +1794,13 @@
 
             useEffect(() => {
                 const load = async () => {
+                    // ③ profileIdが設定されていればそれをSupabaseのキーに使う
+                    const supabaseId = currentUser.profileId || String(currentUser.id);
+
                     if (currentUser && typeof supabaseClient !== 'undefined') {
                         try {
                             await supabaseClient.from('profiles').upsert({
-                                id: String(currentUser.id),
+                                id: supabaseId,
                                 name: currentUser.name,
                                 icon: currentUser.icon,
                                 color_label: currentUser.color?.label || 'Blue'
@@ -1675,7 +1811,7 @@
                             const { data: remoteShots } = await supabaseClient
                                 .from('best_shots')
                                 .select('*')
-                                .eq('user_id', String(currentUser.id));
+                                .eq('user_id', supabaseId);
 
                             if (remoteShots && remoteShots.length > 0) {
                                 for (const remote of remoteShots) {
@@ -1730,9 +1866,11 @@
                 await db.bestShots.put({ userId: currentUser.id, char: char, ...practiceObj });
                 setBestShots(nextShots);
 
+                // ③ profileIdが設定されていればそれをSupabaseのキーに使う
+                const supabaseId = currentUser.profileId || String(currentUser.id);
                 try {
                     await supabaseClient.from('best_shots').upsert({
-                        user_id: currentUser.id,
+                        user_id: supabaseId,
                         char: char,
                         strokes_data: practiceObj.strokes,
                         type: practiceObj.type,
@@ -1751,9 +1889,32 @@
             };
 
             const handleSaveComplete = (char) => {
+                // wordsタブから練習してきた場合はhiraganaタブに切り替えてからパーティクル
+                if (activeTab === 'words') {
+                    setActiveTab('hiragana');
+                }
                 setView('grid');
+
+                // ③ charが追加されて新たにアンロックされることばを検出して通知する
+                setTimeout(() => {
+                    setBestShots(currentShots => {
+                        const newlyUnlocked = (typeof WORD_DATA !== 'undefined' ? WORD_DATA : []).filter(w => {
+                            if (readWords.includes(w.id)) return false;
+                            const charsOnly = w.word.split('').filter(c => isTargetChar(c));
+                            if (charsOnly.length === 0) return false;
+                            const wasUnlocked = charsOnly.every(c => c !== char && currentShots[c]);
+                            const isNowUnlocked = charsOnly.every(c => currentShots[c]);
+                            return !wasUnlocked && isNowUnlocked;
+                        });
+                        if (newlyUnlocked.length > 0) {
+                            setNewWordAlert(newlyUnlocked);
+                        }
+                        return currentShots;
+                    });
+                }, 300);
                 
                 setTimeout(() => {
+                    // wordsタブから来た場合も kanji-item-${char} を探してスクロール＋パーティクル
                     let targetId = `kanji-item-${char}`;
                     if (activeTab === 'home') {
                         targetId = `col-new-${char}`;
@@ -1791,7 +1952,7 @@
                             if (settings.soundEnabled !== false) playSharan();
                         }, duration);
                     }
-                }, 100);
+                }, 150); // タブ切り替えのレンダリングを少し待つ
             };
 
             const handleWordClick = async (wordObj, e) => {
@@ -1873,7 +2034,9 @@
                 return COLOR_OPTIONS.find(c => c.id === settings.testColor)?.class || COLOR_OPTIONS[3].class;
             };
 
-            const renderKanaTable = (tableData) => {
+            const renderKanaTable = (tableData, onLongPress, selectedList) => {
+                const longPressCallback = onLongPress || null;
+                const selected = selectedList !== undefined ? selectedList : (settings.hallOfFame || []);
                 return (
                     <div className="overflow-x-auto pb-4 w-full flex justify-center">
                         <div className="flex flex-row-reverse justify-end gap-1.5 sm:gap-2 min-w-max px-2">
@@ -1887,6 +2050,22 @@
                                         const kanjiData = typeof KANA_DATA !== 'undefined' ? KANA_DATA.find(k => k.char === char) : null;
                                         
                                         if (!kanjiData) {
+                                            // 絵文字かどうか判定（ひらがな・漢字以外）
+                                            const isEmoji = !/[\u3040-\u309F\u4e00-\u9faf]/.test(char);
+                                            if (isEmoji) {
+                                                const isSelectedEmoji = selected.includes(char);
+                                                return (
+                                                    <div
+                                                        key={`emoji-${char}-${colIdx}`}
+                                                        onClick={() => (longPressCallback || addHallOfFame)(char)}
+                                                        onContextMenu={(e) => e.preventDefault()}
+                                                        className={`relative w-11 h-11 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-lg cursor-pointer hover:scale-110 shadow-sm flex items-center justify-center transition-all select-none bg-amber-50 border-2 ${isSelectedEmoji ? 'border-amber-400 ring-2 ring-amber-400 ring-offset-1' : 'border-amber-100 hover:border-amber-300'}`}
+                                                    >
+                                                        <span className="text-2xl md:text-3xl pointer-events-none">{char}</span>
+                                                        {isSelectedEmoji && <div className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white rounded-full p-0.5 shadow-md z-20 pointer-events-none"><Check className="w-2 h-2"/></div>}
+                                                    </div>
+                                                );
+                                            }
                                             return (
                                                 <div key={`und-${char}`} className="w-11 h-11 sm:w-14 sm:h-14 md:w-16 md:h-16 border-2 border-dashed border-stone-200 bg-stone-50/50 rounded-lg flex items-center justify-center text-stone-300 font-kyokasho opacity-60">
                                                     <span className="text-lg md:text-2xl">{char}</span>
@@ -1896,13 +2075,12 @@
 
                                         const shot = bestShots[char];
                                         const isNewKanji = shot?.timestamp && (Date.now() - shot.timestamp < durationMs);
-                                        const isSelected = (settings.hallOfFame || []).includes(char);
+                                        const isSelected = selected.includes(char);
                                         
                                         let colorClass = 'border-2 border-dashed border-stone-300 bg-[#f4f1eb] text-stone-400';
                                         let displayContent;
                                         
                                         if (shot) {
-                                            // ② 3モード対応の枠色
                                             const themeColor = getKanaThemeColor(shot.type);
                                             colorClass = `${themeColor} bg-white border-2 shadow-sm`;
                                             if (isSelected) colorClass += " ring-2 ring-amber-400 ring-offset-1";
@@ -1918,7 +2096,7 @@
 
                                         return (
                                             <div key={`table-${char}`} id={`kanji-item-${char}`} 
-                                                onPointerDown={(e) => handleTouchStart(char, e)}
+                                                onPointerDown={(e) => handleTouchStart(char, e, longPressCallback)}
                                                 onPointerMove={handleTouchMove}
                                                 onPointerUp={(e) => handleTouchEnd(kanjiData, e)}
                                                 onPointerLeave={(e) => handleTouchEnd(kanjiData, e)}
@@ -1938,8 +2116,8 @@
                 );
             };
 
-            if (view === 'admin') return <AdminScreen onBack={() => setView('grid')} settings={settings} saveSettings={saveSettingsWrapper} />;
-            if (view === 'practice') return <PracticeStudio currentUser={currentUser} targetKanji={selectedKanji} settings={settings} onBack={() => setView('grid')} onSaveBest={saveBestShot} onSaveComplete={handleSaveComplete} onOpenAdmin={() => setView('admin')} onToggleSound={() => saveSettingsWrapper({...settings, soundEnabled: settings.soundEnabled === false ? true : false})} />;
+            if (view === 'admin') return <AdminScreen onBack={() => setView(previousView)} settings={settings} saveSettings={saveSettingsWrapper} />;
+            if (view === 'practice') return <PracticeStudio currentUser={currentUser} targetKanji={selectedKanji} settings={settings} onBack={() => setView('grid')} onSaveBest={saveBestShot} onSaveComplete={handleSaveComplete} onOpenAdmin={() => { setPreviousView(view); setView('admin'); }} onToggleSound={() => saveSettingsWrapper({...settings, soundEnabled: settings.soundEnabled === false ? true : false})} />;
 
             const unlockedWords = getUnlockedWords(bestShots);
             const unreadCount = unlockedWords.filter(w => !readWords.includes(w.id)).length;
@@ -2027,8 +2205,7 @@
                                 <div className="flex items-center gap-2">
                                     <span className="text-2xl">📖</span>
                                     <p className="text-amber-800 font-bold text-sm leading-snug font-kyokasho">
-                                        あたらしい ことばが みつかったよ！<br/>
-                                        「ことばずかん」を みてみよう！
+                                        あたらしい ことばが みつかったよ！
                                     </p>
                                 </div>
                                 {newWordAlert.length > 1 && (
@@ -2038,7 +2215,12 @@
                                 )}
                                 <div className="flex gap-3 w-full">
                                     <button
-                                        onClick={() => { setNewWordAlert(null); setActiveTab('words'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                        onClick={() => {
+                                            // 先頭のことばのパズルモーダルを直接開く
+                                            const target = newWordAlert[0];
+                                            setNewWordAlert(null);
+                                            setWordRegisterTarget({ ...target, pendingShots: bestShots });
+                                        }}
                                         className="flex-1 py-2.5 rounded-full font-bold text-white bg-amber-400 border-2 border-amber-500 shadow-md active:scale-95 transition-transform text-sm"
                                     >
                                         📖 みてみる
@@ -2125,46 +2307,47 @@
                                 )}
                             </div>
 
-                            <div className="w-full flex justify-center gap-3 md:gap-6 flex-wrap">
+                            <div className="w-full flex justify-center gap-3 md:gap-5 flex-wrap">
                                 {[
-                                    { bg: '#fff0f6', border: '#ffb8d9', shadow: '#ffb8d988', star: '🌸', rotate: '-rotate-2' },
-                                    { bg: '#fffbe6', border: '#ffd666', shadow: '#ffd66688', star: '⭐', rotate: 'rotate-1' },
-                                    { bg: '#f0fff4', border: '#87e8a1', shadow: '#87e8a188', star: '🍀', rotate: '-rotate-1' },
-                                    { bg: '#f3f0ff', border: '#c3afe8', shadow: '#c3afe888', star: '🌟', rotate: 'rotate-2' },
+                                    { border: '#FF6B6B', bg: '#fff', accent: '#FF6B6B', deco: ['◆','◆'], label: '🌟', rotate: '-rotate-2' },
+                                    { border: '#FFD93D', bg: '#fff', accent: '#FFD93D', deco: ['★','★'], label: '⭐', rotate: 'rotate-1' },
+                                    { border: '#6BCB77', bg: '#fff', accent: '#6BCB77', deco: ['●','●'], label: '🍀', rotate: '-rotate-1' },
+                                    { border: '#4D96FF', bg: '#fff', accent: '#4D96FF', deco: ['▲','▲'], label: '💙', rotate: 'rotate-2' },
                                 ].map((theme, index) => {
                                     const char = settings.hallOfFame?.[index];
                                     const shot = char ? bestShots[char] : null;
+                                    const isEmoji = char && !/[\u3040-\u309F\u4e00-\u9faf]/.test(char);
+                                    const hasContent = isEmoji || !!shot;
                                     return (
                                         <div key={`frame-${index}`} className="flex flex-col items-center gap-2">
                                             <div
-                                                className={`w-24 h-24 md:w-32 md:h-32 relative cursor-pointer transition-all duration-300 rounded-2xl hover:scale-110 hover:-translate-y-2 ${theme.rotate}`}
+                                                className={`w-24 h-24 md:w-32 md:h-32 relative cursor-pointer transition-all duration-300 hover:scale-110 hover:-translate-y-2 ${theme.rotate}`}
                                                 style={{
                                                     background: theme.bg,
-                                                    border: `4px solid ${theme.border}`,
-                                                    boxShadow: `0 8px 20px -4px ${theme.shadow}`
+                                                    border: `5px solid ${theme.border}`,
+                                                    borderRadius: '16px',
+                                                    boxShadow: `4px 4px 0px ${theme.border}`
                                                 }}
                                             >
+                                                {/* 上の飾り帯 */}
                                                 <div
-                                                    className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md text-base border-2"
-                                                    style={{ borderColor: theme.border }}
+                                                    className="absolute top-0 left-0 right-0 flex items-center justify-between px-1.5 py-0.5 rounded-t-[10px]"
+                                                    style={{ background: theme.border, height: '20px' }}
                                                 >
-                                                    {theme.star}
+                                                    <span className="text-white text-[9px] font-black">{theme.deco[0]}</span>
+                                                    <span className="text-white text-[8px] font-bold opacity-80">{index + 1}</span>
+                                                    <span className="text-white text-[9px] font-black">{theme.deco[1]}</span>
                                                 </div>
-                                                <div
-                                                    className="absolute -bottom-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-sm"
-                                                    style={{ backgroundColor: theme.border }}
-                                                >
-                                                    {index + 1}
-                                                </div>
-                                                <div className="w-full h-full flex items-center justify-center p-3">
-                                                    {shot ? (
-                                                        <div className="w-full h-full">
-                                                            <SvgStroke strokes={shot.strokes} strokeWidth={12} color="#374151" />
-                                                        </div>
+                                                {/* コンテンツ */}
+                                                <div className="w-full h-full flex items-center justify-center" style={{ paddingTop: '20px', paddingBottom: '4px', paddingLeft: '4px', paddingRight: '4px' }}>
+                                                    {hasContent ? (
+                                                        isEmoji
+                                                            ? <span className="text-5xl md:text-6xl leading-none">{char}</span>
+                                                            : <div className="w-full h-full"><SvgStroke strokes={shot.strokes} strokeWidth={12} color="#1F2937" /></div>
                                                     ) : (
-                                                        <div className="flex flex-col items-center gap-1 select-none">
-                                                            <span className="text-3xl opacity-20">{theme.star}</span>
-                                                            <span className="text-[9px] font-bold opacity-30 font-kyokasho">あき</span>
+                                                        <div className="flex flex-col items-center gap-1 select-none opacity-30">
+                                                            <span className="text-2xl">{theme.label}</span>
+                                                            <span className="text-[9px] font-bold font-kyokasho">あき</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -2240,14 +2423,19 @@
                                     ].map((theme, index) => {
                                         const char = settings.hallOfFame?.[index];
                                         const shot = char ? bestShots[char] : null;
+                                        const isEmoji = char && !/[\u3040-\u309F\u4e00-\u9faf]/.test(char);
+                                        const hasContent = isEmoji || !!shot;
                                         return (
                                             <div key={`tray-${index}`}
                                                 className="w-14 h-14 md:w-20 md:h-20 rounded-xl flex items-center justify-center relative shrink-0 transition-transform hover:scale-105"
                                                 style={{ background: theme.bg, border: `3px solid ${theme.border}` }}
                                             >
-                                                {shot ? (
+                                                {hasContent ? (
                                                     <>
-                                                        <img src={shot.image} className="w-full h-full object-contain p-1 rounded-lg" />
+                                                        {isEmoji
+                                                            ? <span className="text-3xl md:text-4xl">{char}</span>
+                                                            : <img src={shot.image} className="w-full h-full object-contain p-1 rounded-lg" />
+                                                        }
                                                         <button onClick={() => removeHallOfFame(index)}
                                                             className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 shadow-md hover:scale-110 active:scale-95 z-40 border-2"
                                                             style={{ borderColor: theme.border }}
@@ -2282,12 +2470,17 @@
                             </div>
 
                             <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border-2 border-purple-100 w-full">
-                                <div className="flex items-center justify-center gap-2 mb-6">
+                                <div className="flex items-center justify-center gap-2 mb-4">
                                     <span className="text-2xl">⚡</span>
                                     <h3 className="font-bold text-purple-600 text-center tracking-widest text-lg">てんてん・まる・ちいさいもじ</h3>
                                     <span className="text-2xl">⚡</span>
                                 </div>
-                                {renderKanaTable(DAKUON_YOUON_TABLE)}
+                                <p className="text-center text-[10px] text-stone-400 mb-4 font-bold flex items-center justify-center gap-1">
+                                    ひらがなは <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">ながおし</span>、
+                                    えもじは <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">タップ</span>
+                                    で ギャラリーに かざれるよ！
+                                </p>
+                                {renderKanaTable(DAKUON_YOUON_TABLE, addHallOfFame, settings.hallOfFame || [])}
                             </div>
 
                         </div>
@@ -2386,7 +2579,7 @@
                                                             </div>
                                                         ) : (
                                                             <div key={i}
-                                                                onClick={(e) => { e.stopPropagation(); const targetK = KANA_DATA.find(k => k.char === char); if (targetK) { setSelectedKanji(targetK); setView('practice'); setSearchQuery(''); } }}
+                                                                onClick={(e) => { e.stopPropagation(); const targetK = KANA_DATA.find(k => k.char === char); if (targetK) { speakWithSettings(char, settings); setSelectedKanji(targetK); setView('practice'); setSearchQuery(''); } }}
                                                                 className="w-7 h-7 rounded-lg border-2 border-dashed border-amber-300 flex items-center justify-center bg-amber-50 text-amber-500 text-sm font-kyokasho shrink-0 cursor-pointer hover:bg-amber-100 hover:scale-110 transition-transform shadow-sm"
                                                             >{char}</div>
                                                         );
