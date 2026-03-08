@@ -22,7 +22,9 @@
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 
     <style>
-        body { overscroll-behavior: none; background-color: #fdfbf7; touch-action: none; }
+        body { overscroll-behavior: none; background-color: #fdfbf7; }
+        /* touch-action:none はキャンバスだけに絞る（body全体にかけるとiPadでスクロール不可になる） */
+        canvas { touch-action: none; }
         .font-kyokasho { font-family: "UD Digi Kyokasho NK-R", "Klee One", serif; }
         .inner-shadow { box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); }
         
@@ -288,9 +290,9 @@
             );
         };
 
-        const db = new Dexie("HiraganaPortfolioDB_v2");
-        db.version(2).stores({ 
-            users: 'id',   // ++id（自動採番）→ id（UUID自己管理）に変更
+        const db = new Dexie("HiraganaPortfolioDB_v1");
+        db.version(1).stores({ 
+            users: '++id', 
             settings: 'userId', 
             practices: '++id, userId, [userId+char]', 
             bestShots: '[userId+char], userId', 
@@ -301,6 +303,11 @@
         const isTargetChar = (char) => /[\u3040-\u309F\u4e00-\u9faf]/.test(char);
 
         const fetchKanaVGPaths = async (char) => {
+            // まずキャッシュファイルを見る
+            if (typeof KANJIVG_CACHE !== 'undefined' && KANJIVG_CACHE[char]) {
+                return KANJIVG_CACHE[char];  // ← 即返す！ネット通信なし
+            }
+            // キャッシュにない文字だけ外部から取得（漢字が増えても安心）
             const unicode = char.charCodeAt(0).toString(16).padStart(5, '0');
             const url = `https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@master/kanji/${unicode}.svg`;
             try {
@@ -578,6 +585,34 @@
                                     ))}
                                 </div>
                             </div>
+
+                            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm">
+                                <h3 className="font-bold text-lg mb-1 text-indigo-800 flex items-center gap-2">🎯 れんしゅうの ながれ</h3>
+                                <p className="text-xs text-indigo-600 mb-3">各モードの目標回数を設定します。目標に達すると自動で次のモードに進みます。0回にするとそのモードをスキップします。</p>
+                                {[
+                                    { key: 'traceTarget',  label: 'なぞり',   emoji: '✏️', activeStyle: { borderColor: '#0ea5e9', backgroundColor: '#e0f2fe', color: '#0369a1' }, defaultVal: 3 },
+                                    { key: 'blankTarget',  label: 'おてほん', emoji: '📝', activeStyle: { borderColor: '#22c55e', backgroundColor: '#dcfce7', color: '#15803d' }, defaultVal: 2 },
+                                    { key: 'testTarget',   label: 'みないで', emoji: '⭐', activeStyle: { borderColor: '#a855f7', backgroundColor: '#f3e8ff', color: '#7e22ce' }, defaultVal: 1 },
+                                ].map(({ key, label, emoji, activeStyle, defaultVal }) => (
+                                    <div key={key} className="flex items-center gap-3 mb-2">
+                                        <span className="w-20 text-sm font-bold text-stone-600">{emoji} {label}</span>
+                                        <div className="flex gap-1.5">
+                                            {[0, 1, 2, 3, 5].map(num => {
+                                                const isActive = (settings[key] ?? defaultVal) === num;
+                                                return (
+                                                    <button key={num}
+                                                        onClick={() => saveSettings({...settings, [key]: num})}
+                                                        className="w-9 h-9 rounded-lg font-bold border-2 transition-all text-sm"
+                                                        style={isActive ? activeStyle : { borderColor: '#d6d3d1', backgroundColor: 'white', color: '#78716c' }}
+                                                    >
+                                                        {num === 0 ? 'なし' : `${num}`}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         {/* 右カラム */}
@@ -646,7 +681,7 @@
             );
         };
 
-        const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onSaveBest, onSaveComplete, onOpenAdmin }) => {
+        const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onSaveBest, onSaveComplete, onOpenAdmin, onToggleSound }) => {
             const [isGuideWatched, setIsGuideWatched] = useState(false);
             const hand = settings.hand || 'right'; 
             
@@ -873,7 +908,7 @@
             const tx = destCX - srcCX;
             const ty = destCY - srcCY;
 
-            playDoneSound();
+            if (settings.soundEnabled !== false) playDoneSound();
             setFlyingCard({ active: true, image: dataUrl, startX: canvasRect.left, startY: canvasRect.top, w: canvasRect.width, h: canvasRect.height, tx, ty, scale, flying: false });
             
             requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -888,7 +923,23 @@
                 contextRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); 
                 allStrokesRef.current = [];
                 currentStrokeRef.current = [];
-                setSessionLogs(currentLogs); 
+                setSessionLogs(currentLogs);
+
+                // ▼ 自動モード遷移
+                const traceTarget = settings.traceTarget ?? 3;
+                const blankTarget = settings.blankTarget ?? 2;
+                const testTarget  = settings.testTarget  ?? 1;
+                const nextMode = (() => {
+                    if (practiceMode === 'trace' && traceTarget > 0 && currentLogs.trace >= traceTarget) {
+                        if (blankTarget > 0) return 'blank';
+                        if (testTarget  > 0) return 'test';
+                    }
+                    if (practiceMode === 'blank' && blankTarget > 0 && currentLogs.blank >= blankTarget) {
+                        if (testTarget > 0) return 'test';
+                    }
+                    return null;
+                })();
+                if (nextMode) setPracticeMode(nextMode);
             }, 800); 
         };
 
@@ -920,7 +971,16 @@
                         <div className="w-full flex justify-between items-start mb-2 px-3 gap-2">
                             <div className="flex flex-col gap-2 shrink-0">
                                 <button onClick={onBack} className="text-stone-500 flex items-center gap-1 text-sm bg-white px-3 py-1.5 rounded-full mt-1 hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all"><span className="text-base leading-none">🏠</span> もどる</button>
-                                <a href="admin.html" onClick={(e) => { e.preventDefault(); onOpenAdmin(); }} className="text-stone-500 flex items-center justify-center text-xl bg-white w-10 h-10 rounded-full hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all leading-none">⚙️</a>
+                                <div className="flex gap-2">
+                                    <a href="admin.html" onClick={(e) => { e.preventDefault(); onOpenAdmin(); }} className="text-stone-500 flex items-center justify-center text-xl bg-white w-10 h-10 rounded-full hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all leading-none">⚙️</a>
+                                    <button
+                                        onClick={() => onToggleSound()}
+                                        title={settings.soundEnabled !== false ? "おとをけす" : "おとをならす"}
+                                        className="text-stone-500 flex items-center justify-center text-xl bg-white w-10 h-10 rounded-full hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all leading-none"
+                                    >
+                                        {settings.soundEnabled !== false ? '🔔' : '🔕'}
+                                    </button>
+                                </div>
                             </div>
                             
                             <div className="flex-1 flex justify-center">
@@ -1052,18 +1112,36 @@
                                 <span className="absolute -top-6 left-2 text-gray-500 text-xs font-bold whitespace-nowrap">ここに かこう！</span>
                                 
                                 <div className="absolute -top-10 right-0 flex bg-white rounded-full shadow-sm border p-0.5 z-20 overflow-hidden">
-                                    <button onClick={() => !hasDrawn && setPracticeMode('trace')} disabled={hasDrawn} 
-                                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${practiceMode !== 'trace' ? 'text-gray-400 hover:bg-gray-50' : ''} ${hasDrawn ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                        style={practiceMode === 'trace' ? { backgroundColor: `${traceTheme.hex}22`, color: traceTheme.hex } : {}}
-                                    >なぞり</button>
-                                    <button onClick={() => !hasDrawn && setPracticeMode('blank')} disabled={hasDrawn} 
-                                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${practiceMode !== 'blank' ? 'text-gray-400 hover:bg-gray-50' : ''} ${hasDrawn ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                        style={practiceMode === 'blank' ? { backgroundColor: `${blankTheme.hex}22`, color: blankTheme.hex } : {}}
-                                    >おてほん</button>
-                                    <button onClick={() => !hasDrawn && setPracticeMode('test')} disabled={hasDrawn} 
-                                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${practiceMode !== 'test' ? 'text-gray-400 hover:bg-gray-50' : ''} ${hasDrawn ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                        style={practiceMode === 'test' ? { backgroundColor: `${testTheme.hex}22`, color: testTheme.hex } : {}}
-                                    >みないで</button>
+                                    {(() => {
+                                        const traceTarget = settings.traceTarget ?? 3;
+                                        const blankTarget = settings.blankTarget ?? 2;
+                                        const testTarget  = settings.testTarget  ?? 1;
+                                        const traceDone   = sessionLogs.trace;
+                                        const blankDone   = sessionLogs.blank;
+                                        const testDone    = sessionLogs.test;
+                                        const modeBtn = (mode, label, theme, target, done) => {
+                                            const remaining = target > 0 ? Math.max(0, target - done) : null;
+                                            const finished  = target > 0 && done >= target;
+                                            return (
+                                                <button key={mode} onClick={() => !hasDrawn && setPracticeMode(mode)} disabled={hasDrawn}
+                                                    className={`relative px-3 py-1 rounded-full text-xs font-bold transition-all ${practiceMode !== mode ? 'text-gray-400 hover:bg-gray-50' : ''} ${hasDrawn ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                    style={practiceMode === mode ? { backgroundColor: `${theme.hex}22`, color: theme.hex } : {}}
+                                                >
+                                                    {label}
+                                                    {target > 0 && (
+                                                        <span className={`ml-1 text-[10px] font-bold px-1 py-0.5 rounded-full ${finished ? 'bg-green-100 text-green-600' : 'bg-stone-100 text-stone-400'}`}>
+                                                            {finished ? '✓' : `あと${remaining}`}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            );
+                                        };
+                                        return (<>
+                                            {modeBtn('trace', 'なぞり',   traceTheme, traceTarget, traceDone)}
+                                            {modeBtn('blank', 'おてほん', blankTheme, blankTarget, blankDone)}
+                                            {modeBtn('test',  'みないで', testTheme,  testTarget,  testDone)}
+                                        </>);
+                                    })()}
                                 </div>
 
                                 <div className="relative w-full aspect-square bg-white rounded-2xl shadow-xl border-4 overflow-hidden cursor-crosshair transition-colors duration-300" style={{ borderColor: borderColor }}>
@@ -1178,47 +1256,34 @@
             useEffect(() => {
                 const loadUsers = async () => {
                     setIsLoadingUsers(true);
-
-                    // まずローカルのDexieから読む
                     const localUsers = await db.users.toArray();
                     setUsers(localUsers);
-
-                    // 次にSupabaseのprofilesも取得してマージ
                     try {
-                        const { data: remoteProfiles } = await supabaseClient
-                            .from('profiles')
-                            .select('*');
-
-                        if (remoteProfiles && remoteProfiles.length > 0) {
+                        const { data: remoteProfiles } = await supabaseClient.from('profiles').select('*');
+                        if (remoteProfiles) {
+                            const remoteIds = remoteProfiles.map(p => String(p.id));
+                            for (const localUser of localUsers) {
+                                if (!remoteIds.includes(String(localUser.id))) {
+                                    await db.users.delete(localUser.id);
+                                    await db.bestShots.where('userId').equals(localUser.id).delete();
+                                    await db.settings.where({ userId: localUser.id }).delete();
+                                    await db.readWords.where({ userId: localUser.id }).delete();
+                                }
+                            }
                             const localIds = localUsers.map(u => String(u.id));
                             const newFromRemote = [];
-
                             for (const profile of remoteProfiles) {
                                 if (!localIds.includes(String(profile.id))) {
-                                    // Supabaseにいてローカルにいないユーザーを復元
-                                    const colorObj = USER_COLOR_OPTIONS.find(
-                                        c => c.label === profile.color_label
-                                    ) || USER_COLOR_OPTIONS[0];
-                                    const restoredUser = {
-                                        id: profile.id,
-                                        name: profile.name,
-                                        icon: profile.icon,
-                                        color: colorObj
-                                    };
+                                    const colorObj = USER_COLOR_OPTIONS.find(c => c.label === profile.color_label) || USER_COLOR_OPTIONS[0];
+                                    const restoredUser = { id: profile.id, name: profile.name, icon: profile.icon, color: colorObj };
                                     await db.users.put(restoredUser);
                                     newFromRemote.push(restoredUser);
                                 }
                             }
-
-                            if (newFromRemote.length > 0) {
-                                // 新しく復元されたユーザーを追加して再表示
-                                setUsers(prev => [...prev, ...newFromRemote]);
-                            }
+                            const updatedUsers = await db.users.toArray();
+                            setUsers(updatedUsers);
                         }
-                    } catch(e) {
-                        console.error("Supabaseからのユーザー読み込みエラー:", e);
-                    }
-
+                    } catch(e) { console.error("Supabaseユーザー同期エラー:", e); }
                     setIsLoadingUsers(false);
                 };
                 loadUsers();
@@ -1250,28 +1315,39 @@
                     setIsCreating(false);
                     setEditingUser(null);
                 } else {
-                    const newUser = { 
-                        id: crypto.randomUUID(),  // 世界で唯一のIDを自動生成
-                        name: newName.trim(), 
-                        icon: newIcon, 
-                        color: newColor 
-                    };
-                    await db.users.put(newUser);
-                    onSelect(newUser);
+                    const newUser = { name: newName.trim(), icon: newIcon, color: newColor };
+                    const id = await db.users.add(newUser);
+                    onSelect({ ...newUser, id });
                 }
             };
 
             const handleDeleteUser = async (userId, userName, e) => {
                 e.stopPropagation(); 
-                if (window.confirm(`${userName} の データを ぜんぶ けしますか？\n（けした データは もとにもどせません）`)) {
-                    await db.users.delete(userId);
-                    await db.settings.where({ userId: userId }).delete();
-                    await db.practices.where({ userId: userId }).delete();
-                    await db.bestShots.where({ userId: userId }).delete();
-                    await db.readWords.where({ userId: userId }).delete();
-                    setUsers(prev => prev.filter(u => u.id !== userId));
-                }
-            };
+               　 if (window.confirm(`${userName} の データを ぜんぶ けしますか？\n（けした データは もとにもどせません）`)) {
+        　　　　　　// ローカルを削除
+       　　　　　　 await db.users.delete(userId);
+        　　　　　　await db.settings.where({ userId: userId }).delete();
+        　　　　　　await db.practices.where({ userId: userId }).delete();
+        　　　　　　await db.bestShots.where({ userId: userId }).delete();
+        　　　　　　await db.readWords.where({ userId: userId }).delete();
+
+        　　　　　　// Supabaseからも削除 ← これを追加！
+        　　　　　try {
+            　　　　await supabaseClient
+                　　.from('profiles')
+                　　.delete()
+                　　.eq('id', String(userId));
+            　　　await supabaseClient
+                　　.from('best_shots')
+                　　.delete()
+                　　.eq('user_id', String(userId));
+        　　　　　　　} catch(e) {
+           　　　 console.error("Supabase削除エラー:", e);
+       　　　　　　　 }
+
+        setUsers(prev => prev.filter(u => u.id !== userId));
+    }
+};
 
             if (isCreating) {
                 return (
@@ -1304,13 +1380,7 @@
                 <div className="p-6 max-w-md mx-auto min-h-screen flex flex-col items-center justify-center animate-fade-in">
                     <h1 className="text-3xl font-bold mb-8 text-sky-700 font-kyokasho">だれが あそぶ？</h1>
                     <div className="w-full space-y-4 mb-8">
-                        {isLoadingUsers && (
-                            <div className="text-center text-stone-400 font-bold py-8 flex flex-col items-center gap-3">
-                                <Loader className="w-8 h-8 text-sky-400"/>
-                                <span>よみこみちゅう…</span>
-                            </div>
-                        )}
-                        {!isLoadingUsers && users.length === 0 && <div className="text-center text-stone-400 font-bold py-8">まだ だれも いません</div>}
+                        {users.length === 0 && <div className="text-center text-stone-400 font-bold py-8">まだ だれも いません</div>}
                         {users.map(user => (
                             <div key={user.id} className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-sm border-2 transition-transform hover:-translate-y-1 ${user.color.class} ${user.color.border}`}>
                                 <div onClick={() => onSelect(user)} className="flex items-center gap-4 flex-1 cursor-pointer active:scale-95 transition-transform">
@@ -1488,9 +1558,9 @@
             };
 
             return (
-                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-                    <div className="relative w-full max-w-lg bg-[#fdfbf7] rounded-t-3xl shadow-2xl overflow-hidden animate-bounce-in"
-                        style={{ paddingBottom: 'env(safe-area-inset-bottom, 24px)' }}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
+                    <div className="relative w-full max-w-lg bg-[#fdfbf7] rounded-3xl shadow-2xl overflow-hidden animate-bounce-in"
+                        style={{ paddingBottom: '24px' }}>
                         
                         {/* 上部デコライン */}
                         <div className="w-full h-2 bg-gradient-to-r from-amber-300 via-orange-300 to-amber-300"/>
@@ -1562,7 +1632,7 @@
 
                         {/* 完成演出オーバーレイ */}
                         {celebrating && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 animate-celebrate-in z-20 rounded-t-3xl">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-orange-50 animate-celebrate-in z-20 rounded-3xl">
                                 <div className="text-7xl mb-3" style={{ animation: 'bounce 0.6s infinite' }}>{wordObj.icon}</div>
                                 <div className="text-4xl font-kyokasho text-amber-800 tracking-widest font-bold mb-2">{wordObj.word}</div>
                                 <div className="text-lg font-bold text-amber-600 mb-4">ことばずかん に とうろく！</div>
@@ -1583,7 +1653,7 @@
             const [activeTab, setActiveTab] = useState('home'); 
             const [selectedKanji, setSelectedKanji] = useState(null);
             const [bestShots, setBestShots] = useState({});
-            const [settings, setSettings] = useState({ targetCount: 5, traceColor: 'sky', blankColor: 'green', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [] });
+            const [settings, setSettings] = useState({ targetCount: 5, traceColor: 'sky', blankColor: 'green', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], soundEnabled: true, traceTarget: 3, blankTarget: 2, testTarget: 1 });
             
             const [newWordAlert, setNewWordAlert] = useState(null);
             const [wordRegisterTarget, setWordRegisterTarget] = useState(null);
@@ -1773,7 +1843,7 @@
                         
                         setTimeout(() => {
                             emitParticles(el);
-                            playSharan();
+                            if (settings.soundEnabled !== false) playSharan();
                         }, duration);
                     }
                 }, 100);
@@ -1916,7 +1986,7 @@
             };
 
             if (view === 'admin') return <AdminScreen onBack={() => setView('grid')} settings={settings} saveSettings={saveSettingsWrapper} />;
-            if (view === 'practice') return <PracticeStudio currentUser={currentUser} targetKanji={selectedKanji} settings={settings} onBack={() => setView('grid')} onSaveBest={saveBestShot} onSaveComplete={handleSaveComplete} />;
+            if (view === 'practice') return <PracticeStudio currentUser={currentUser} targetKanji={selectedKanji} settings={settings} onBack={() => setView('grid')} onSaveBest={saveBestShot} onSaveComplete={handleSaveComplete} onOpenAdmin={() => setView('admin')} onToggleSound={() => saveSettingsWrapper({...settings, soundEnabled: settings.soundEnabled === false ? true : false})} />;
 
             const unlockedWords = getUnlockedWords(bestShots);
             const unreadCount = unlockedWords.filter(w => !readWords.includes(w.id)).length;
@@ -1985,6 +2055,13 @@
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
+                            <button
+                                onClick={() => saveSettingsWrapper({...settings, soundEnabled: settings.soundEnabled === false ? true : false})}
+                                title={settings.soundEnabled !== false ? "おとをけす" : "おとをならす"}
+                                className="shrink-0 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full shadow-sm border-2 border-stone-200 bg-white active:scale-95 transition-transform text-xl"
+                            >
+                                {settings.soundEnabled !== false ? '🔔' : '🔕'}
+                            </button>
                             <button onClick={onLogout} title="だれがあそぶ？" className={`shrink-0 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full shadow-sm border-2 ${currentUser.color.class} ${currentUser.color.border} active:scale-95 transition-transform font-bold text-xl sm:text-2xl`}>
                                 {currentUser.icon}
                             </button>
@@ -1992,13 +2069,35 @@
                     </div>
 
                     {newWordAlert && newWordAlert.length > 0 && (
-                        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-white border-4 border-amber-300 rounded-2xl p-4 shadow-2xl animate-bounce-in flex flex-col items-center w-72">
-                            <span className="text-amber-500 font-bold mb-1 text-sm">✨ 新しいことばを発見！ ✨</span>
-                            <div className="flex flex-col items-center my-2">
-                                <span className="text-3xl font-kyokasho text-stone-800 tracking-widest">{newWordAlert[0].word}</span>
-                                <span className="text-sm text-stone-500 mt-1">{newWordAlert[0].reading}</span>
+                        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm animate-bounce-in">
+                            <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-4 border-amber-300 rounded-2xl p-4 shadow-2xl flex flex-col items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-2xl">📖</span>
+                                    <p className="text-amber-800 font-bold text-sm leading-snug font-kyokasho">
+                                        あたらしい ことばが みつかったよ！<br/>
+                                        「ことばずかん」を みてみよう！
+                                    </p>
+                                </div>
+                                {newWordAlert.length > 1 && (
+                                    <div className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full border border-amber-200">
+                                        {newWordAlert.length}こ の あたらしいことば ✨
+                                    </div>
+                                )}
+                                <div className="flex gap-3 w-full">
+                                    <button
+                                        onClick={() => { setNewWordAlert(null); setActiveTab('words'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                        className="flex-1 py-2.5 rounded-full font-bold text-white bg-amber-400 border-2 border-amber-500 shadow-md active:scale-95 transition-transform text-sm"
+                                    >
+                                        📖 みてみる
+                                    </button>
+                                    <button
+                                        onClick={() => setNewWordAlert(null)}
+                                        className="flex-1 py-2.5 rounded-full font-bold text-stone-500 bg-white border-2 border-stone-200 shadow-sm active:scale-95 transition-transform text-sm"
+                                    >
+                                        とじる
+                                    </button>
+                                </div>
                             </div>
-                            {newWordAlert.length > 1 && <div className="mt-2 bg-amber-50 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-200 shadow-sm animate-pop-in">ほか {newWordAlert.length - 1}こ の ことば も！</div>}
                         </div>
                     )}
 
