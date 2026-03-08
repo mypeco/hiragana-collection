@@ -288,9 +288,9 @@
             );
         };
 
-        const db = new Dexie("HiraganaPortfolioDB_v1");
-        db.version(1).stores({ 
-            users: '++id', 
+        const db = new Dexie("HiraganaPortfolioDB_v2");
+        db.version(2).stores({ 
+            users: 'id',   // ++id（自動採番）→ id（UUID自己管理）に変更
             settings: 'userId', 
             practices: '++id, userId, [userId+char]', 
             bestShots: '[userId+char], userId', 
@@ -1203,9 +1203,17 @@
                     setIsCreating(false);
                     setEditingUser(null);
                 } else {
-                    const newUser = { name: newName.trim(), icon: newIcon, color: newColor };
-                    const id = await db.users.add(newUser);
-                    onSelect({ ...newUser, id });
+                    // crypto.randomUUID() = 世界中で唯一のランダムなIDを生成
+                    // 例：「a3f8bc12-d9e2-ff44-b71c-aa09c3f81234」
+                    // これにより別端末でも同じIDを引き継げる
+                    const newUser = { 
+                        id: crypto.randomUUID(),
+                        name: newName.trim(), 
+                        icon: newIcon, 
+                        color: newColor 
+                    };
+                    await db.users.put(newUser);
+                    onSelect(newUser);
                 }
             };
 
