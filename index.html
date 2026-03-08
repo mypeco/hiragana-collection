@@ -1583,30 +1583,59 @@
             };
 
             useEffect(() => {
-                const load = async () => {
-                    if (currentUser && typeof supabaseClient !== 'undefined') {
-                        try {
-                            await supabaseClient.from('profiles').upsert({
-                                id: String(currentUser.id),
-                                name: currentUser.name,
-                                icon: currentUser.icon,
-                                color_label: currentUser.color?.label || 'Blue'
+    const load = async () => {
+        if (currentUser && typeof supabaseClient !== 'undefined') {
+            try {
+                await supabaseClient.from('profiles').upsert({
+                    id: String(currentUser.id),
+                    name: currentUser.name,
+                    icon: currentUser.icon,
+                    color_label: currentUser.color?.label || 'Blue'
+                });
+            } catch(e) { console.error("名簿の同期エラー:", e); }
+
+            // Supabaseからbest_shotsを読み戻す
+            try {
+                const { data: remoteShots } = await supabaseClient
+                    .from('best_shots')
+                    .select('*')
+                    .eq('user_id', String(currentUser.id));
+
+                if (remoteShots && remoteShots.length > 0) {
+                    for (const remote of remoteShots) {
+                        const local = await db.bestShots.get({
+                            userId: currentUser.id,
+                            char: remote.char
+                        });
+                        // ローカルにない or Supabaseの方が新しければ上書き
+                        if (!local || remote.timestamp > local.timestamp) {
+                            await db.bestShots.put({
+                                userId: currentUser.id,
+                                char: remote.char,
+                                strokes: remote.strokes_data,
+                                type: remote.type,
+                                timestamp: remote.timestamp,
+                                image: local?.image || null
                             });
-                        } catch(e) { console.error("名簿の同期エラー:", e); }
+                        }
                     }
-                    const savedSettings = await db.settings.get(currentUser.id);
-                    if (savedSettings) setSettings(savedSettings);
+                }
+            } catch(e) { console.error("Supabaseからの読み戻しエラー:", e); }
+        }
 
-                    const shots = await db.bestShots.where('userId').equals(currentUser.id).toArray();
-                    const map = {};
-                    shots.forEach(s => map[s.char] = s);
-                    setBestShots(map);
+        const savedSettings = await db.settings.get(currentUser.id);
+        if (savedSettings) setSettings(savedSettings);
 
-                    const reads = await db.readWords.where('userId').equals(currentUser.id).toArray();
-                    setReadWords(reads.map(r => r.wordId));
-                };
-                load();
-            }, [currentUser]);
+        const shots = await db.bestShots.where('userId').equals(currentUser.id).toArray();
+        const map = {};
+        shots.forEach(s => map[s.char] = s);
+        setBestShots(map);
+
+        const reads = await db.readWords.where('userId').equals(currentUser.id).toArray();
+        setReadWords(reads.map(r => r.wordId));
+    };
+    load();
+}, [currentUser]);
 
             // useCallback: currentUser.id が変わったときだけ関数を作り直す
             const saveSettingsWrapper = useCallback(async (newSettings) => {
