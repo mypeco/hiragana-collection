@@ -11,87 +11,19 @@
     <link rel="apple-touch-icon" href="icon-192.png">
     <title>ひらがなコレクション</title>
     
-    <!-- ===== 診断用エラー表示 ===== -->
-<style>
-  #debug-overlay {
-    display:none; position:fixed; top:0; left:0; right:0; bottom:0;
-    background:#1a1a2e; color:#eee; font-size:14px; padding:16px;
-    overflow:auto; z-index:99999; font-family:monospace;
-  }
-  #debug-overlay h2 { color:#ff6b6b; font-size:18px; margin-bottom:12px; }
-  #debug-overlay .item { background:#2d2d44; border-left:4px solid #ff6b6b;
-    padding:10px; margin:8px 0; border-radius:4px; word-break:break-all; }
-  #debug-overlay .ok   { border-left-color:#51cf66; }
-  #debug-overlay .warn { border-left-color:#ffd43b; }
-</style>
-<div id="debug-overlay">
-  <h2>🔍 エラー診断モード</h2>
-  <div id="debug-log"></div>
-</div>
-<script>
-  (function() {
-    var log = [];
-    function show(msg, type) {
-      log.push({ msg: msg, type: type || 'err' });
-      var el = document.getElementById('debug-log');
-      if (!el) return;
-      el.innerHTML = log.map(function(l) {
-        return '<div class="item ' + l.type + '">' + l.msg + '</div>';
-      }).join('');
-      document.getElementById('debug-overlay').style.display = 'block';
-      document.getElementById('root').style.display = 'none';
-    }
-    window._debugLog = show;
-
-    // グローバルエラーをキャッチ
-    window.onerror = function(msg, src, line, col, err) {
-      show('❌ JSエラー: ' + msg + '<br>場所: ' + (src||'?') + ' 行' + line, 'err');
-      return false;
-    };
-    window.addEventListener('unhandledrejection', function(e) {
-      show('❌ Promise失敗: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)), 'err');
-    });
-
-    // 各スクリプト読み込みチェック用タイマー
-    window._loadCheck = {};
-    window._markLoaded = function(name) {
-      window._loadCheck[name] = true;
-      window._debugLog && window._debugLog('✅ 読み込み成功: ' + name, 'ok');
-    };
-
-    // 10秒後にまだrootが空ならエラー表示
-    setTimeout(function() {
-      var root = document.getElementById('root');
-      if (root && root.children.length === 0) {
-        show('⏰ 10秒後もアプリが表示されていません。', 'warn');
-        show('チェック結果: React=' + (typeof React !== 'undefined' ? '✅' : '❌')
-          + ' / ReactDOM=' + (typeof ReactDOM !== 'undefined' ? '✅' : '❌')
-          + ' / Babel=' + (typeof Babel !== 'undefined' ? '✅' : '❌')
-          + ' / Dexie=' + (typeof Dexie !== 'undefined' ? '✅' : '❌')
-          + ' / Supabase=' + (typeof supabase !== 'undefined' ? '✅' : '❌'), 'warn');
-      }
-    }, 10000);
-  })();
-</script>
-<!-- ===== 診断用ここまで ===== -->
-<script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Yuji+Boku&display=swap" rel="stylesheet">
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js" onload="window._markLoaded&&_markLoaded('React')" onerror="window._debugLog&&_debugLog('CDN失敗: React(unpkg)')"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" onload="window._markLoaded&&_markLoaded('ReactDOM')" onerror="window._debugLog&&_debugLog('CDN失敗: ReactDOM(unpkg)')"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window._markLoaded && _markLoaded('Supabase')" onerror="window._debugLog && _debugLog('CDN失敗: Supabase')"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-       try {
-         const SUPABASE_URL = "https://jlzxiewwttwkvetqhxzp.supabase.co";
-         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsenhpZXd3dHR3a3ZldHFoeHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NTg1OTMsImV4cCI6MjA4ODQzNDU5M30.lTleRE8Bn8_Xjt1QGz8iKb-hnISk6Q02iTrHtl76L8Y";
-         window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-       } catch(e) {
-         window._debugLog && _debugLog('Supabase初期化エラー: ' + e.message);
-         window.supabaseClient = null;
-       }
+       const SUPABASE_URL = "https://jlzxiewwttwkvetqhxzp.supabase.co";
+       const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsenhpZXd3dHR3a3ZldHFoeHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NTg1OTMsImV4cCI6MjA4ODQzNDU5M30.lTleRE8Bn8_Xjt1QGz8iKb-hnISk6Q02iTrHtl76L8Y";
+       const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     </script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js" onload="window._markLoaded&&_markLoaded('Babel')" onerror="window._debugLog&&_debugLog('❌CDN失敗: Babel(unpkg) - これが白画面の原因の可能性大!')"></script>
-    <script src="https://unpkg.com/dexie/dist/dexie.js" onload="window._markLoaded&&_markLoaded('Dexie')" onerror="window._debugLog&&_debugLog('❌CDN失敗: Dexie(unpkg)!')"></script>
-    <script src="kanjivg-cache.js" onload="window._markLoaded&&_markLoaded('kanjivg-cache')" onerror="window._debugLog&&_debugLog('kanjivg-cache.js未発見(GitHubにファイルがあるか確認)', 'warn')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dexie/dist/dexie.js"></script>
+    <script src="kanjivg-cache.js"></script>
 
     <style>
         body { overscroll-behavior: none; background-color: #fdfbf7; }
