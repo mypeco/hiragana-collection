@@ -2,7 +2,7 @@
 // ひらがなコレクション サービスワーカー
 // ========================================
 
-const CACHE_NAME = 'hiragana-collection-v2';
+const CACHE_NAME = 'hiragana-collection-v3';
 
 // オフラインでも動かすためにキャッシュするファイル一覧
 const APP_SHELL = [
@@ -119,3 +119,4 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
