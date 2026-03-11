@@ -56,6 +56,18 @@
     <script type="text/babel">
         const { useState, useRef, useEffect, useMemo, useCallback } = React;
 
+        // 【修正1】AudioContextをグローバルで1個だけ作る
+        // 毎回newすると iOSは上限を超えて音が出なくなるため
+        let _audioCtx = null;
+        const getAudioContext = () => {
+            if (!_audioCtx || _audioCtx.state === 'closed') {
+                _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            // iOSはタップ後に "suspended" になることがある → 再開する
+            if (_audioCtx.state === 'suspended') _audioCtx.resume();
+            return _audioCtx;
+        };
+
         const KANA_GROUPS = [
             { id: 'seion',  label: 'あ〜ん' },
             { id: 'dakuon', label: 'てんてん・まる' },
@@ -180,6 +192,22 @@
         const ICON_OPTIONS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🐨', '🐯', '🦁', '🚗', '🚀', '✈️', '🚂', '🚓', '🚑', '⚽', '⚾', '🏀', '🎾', '🍎', '🍓', '🍒', '🍇', '🍉', '☀️', '🌙', '🌟', '❄️', '🌈', '👑', '💎', '🎀', '🎵'];
         const DURATION_OPTIONS = [ { val: 1, label: '1日' }, { val: 3, label: '3日' }, { val: 7, label: '1週間' }, { val: 14, label: '2週間' }, { val: 30, label: '1ヶ月' } ];
 
+        // 【修正2】voices を起動時に1回だけ読み込んで使い回す
+        // Safariは getVoices() が最初に空配列を返すことがあるため
+        let _cachedVoices = [];
+        const loadVoices = () => {
+            const v = window.speechSynthesis.getVoices();
+            if (v.length > 0) _cachedVoices = v;
+        };
+        if (window.speechSynthesis) {
+            loadVoices();
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+        const getVoices = () => {
+            if (_cachedVoices.length === 0) loadVoices();
+            return _cachedVoices;
+        };
+
         const speak = (text, { rate = 0.85, pitch = 1.1 } = {}, voiceNameOverride) => {
             if (!window.speechSynthesis) return;
             window.speechSynthesis.cancel();
@@ -188,7 +216,7 @@
             utter.rate = rate;
             utter.pitch = pitch;
             if (voiceNameOverride !== undefined) {
-                const v = window.speechSynthesis.getVoices().find(v => v.name === voiceNameOverride);
+                const v = getVoices().find(v => v.name === voiceNameOverride);
                 if (v) utter.voice = v;
             }
             window.speechSynthesis.speak(utter);
@@ -202,7 +230,7 @@
             utter.rate = opts.rate || 0.85;
             utter.pitch = opts.pitch || 1.1;
             if (settings.voiceName) {
-                const v = window.speechSynthesis.getVoices().find(v => v.name === settings.voiceName);
+                const v = getVoices().find(v => v.name === settings.voiceName);
                 if (v) utter.voice = v;
             }
             window.speechSynthesis.speak(utter);
@@ -210,7 +238,7 @@
 
         const playSharan = () => {
             try {
-                const ac = new (window.AudioContext || window.webkitAudioContext)();
+                const ac = getAudioContext();
                 const notes = [1800, 2400, 3000, 3800, 2800, 3500];
                 notes.forEach((freq, i) => {
                     const o = ac.createOscillator();
@@ -861,7 +889,7 @@
 
             const playDoneSound = () => {
                 try {
-                    const ac = new (window.AudioContext || window.webkitAudioContext)();
+                    const ac = getAudioContext();
                     const notes = [2400, 3200, 4100];
                     notes.forEach((freq, i) => {
                         const o = ac.createOscillator();
@@ -1298,7 +1326,7 @@
             );
         };
 
-        const ProfileSelect = ({ onSelect }) => {
+        const ProfileSelect = ({ onSelect, authUserId }) => {
             const [users, setUsers] = useState([]);
             const [isCreating, setIsCreating] = useState(false);
             const [editingUser, setEditingUser] = useState(null); 
@@ -1345,16 +1373,13 @@
                     localUsers = await db.users.toArray();
                     setUsers(localUsers);
                     try {
-                        // ひらがなアプリのプロフィールだけ取得（app_typeで絞り込み）
+                        // RLS対応：自分のauth_user_idのプロフィールだけ取得
                         const { data: remoteProfiles } = await supabaseClient
                             .from('profiles')
                             .select('*')
                             .eq('app_type', 'hiragana');
                         if (remoteProfiles) {
-                            // ローカルのprofileId一覧（UUIDで比較）
                             const localProfileIds = localUsers.map(u => u.profileId).filter(Boolean);
-
-                            // クラウドにあってローカルにないプロフィールを復元する
                             for (const profile of remoteProfiles) {
                                 if (!localProfileIds.includes(String(profile.id))) {
                                     const colorObj = USER_COLOR_OPTIONS.find(c => c.label === profile.color_label) || USER_COLOR_OPTIONS[0];
@@ -1408,6 +1433,17 @@
                     const profileId = newProfileId.trim() || crypto.randomUUID();
                     const newUser = { name: newName.trim(), icon: newIcon, color: newColor, profileId };
                     const id = await db.users.add(newUser);
+                    // Supabaseにもprofileを保存（auth_user_idを付ける）
+                    try {
+                        await supabaseClient.from('profiles').upsert({
+                            id: profileId,
+                            auth_user_id: authUserId,
+                            app_type: 'hiragana',
+                            name: newUser.name,
+                            icon: newUser.icon,
+                            color_label: newUser.color?.label || 'Blue'
+                        });
+                    } catch(e) { console.error("プロフィール保存エラー:", e); }
                     onSelect({ ...newUser, id });
                 }
             };
@@ -1527,6 +1563,9 @@
                     </div>
                     <button onClick={handleStartCreate} className="flex items-center justify-center gap-2 w-full py-4 rounded-full font-bold text-stone-500 bg-white border-2 border-dashed border-stone-300 hover:bg-stone-50 active:scale-95 transition-transform">
                         <Sparkles className="w-5 h-5"/> あたらしく つくる
+                    </button>
+                    <button onClick={() => supabaseClient.auth.signOut()} className="mt-4 text-xs text-stone-400 underline hover:text-stone-600">
+                        ログアウト
                     </button>
                 </div>
             );
@@ -1652,7 +1691,7 @@
             // 節目サウンド
             const playMilestoneSound = (isFinal) => {
                 try {
-                    const ac = new (window.AudioContext || window.webkitAudioContext)();
+                    const ac = getAudioContext();
                     if (isFinal) {
                         // 75個達成 ─ 豪華なファンファーレ
                         const notes = [
@@ -1975,7 +2014,7 @@
                                                 ${usedAll
                                                     ? 'opacity-30 grayscale cursor-not-allowed border-stone-200 bg-stone-50'
                                                     : 'border-amber-400 bg-white shadow-md hover:shadow-xl hover:-translate-y-1 active:scale-90 cursor-pointer'}`}>
-                                            {shot && <img src={shot.image} className="w-full h-full object-contain pointer-events-none"/>}
+                                            {shot && <SvgStroke strokes={shot.strokes} strokeWidth={9} color="#78350f"/>}
                                             {usedAll && (
                                                 <div className="absolute inset-0 flex items-center justify-center text-green-500 text-2xl">✓</div>
                                             )}
@@ -2103,6 +2142,7 @@
                         try {
                             await supabaseClient.from('profiles').upsert({
                                 id: supabaseId,
+                                auth_user_id: (await supabaseClient.auth.getUser()).data.user?.id,
                                 app_type: 'hiragana',
                                 name: currentUser.name,
                                 icon: currentUser.icon,
@@ -3045,9 +3085,84 @@
             );
         }
 
+        // ▼ ログイン画面
+        const LoginScreen = ({ onLogin }) => {
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+
+            const handleGoogleLogin = async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    const { error } = await supabaseClient.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            redirectTo: window.location.href
+                        }
+                    });
+                    if (error) throw error;
+                } catch(e) {
+                    setError('ログインできませんでした。もう一度試してください。');
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-[#fdfbf7] p-6">
+                    <div className="text-6xl mb-4">📖</div>
+                    <h1 className="text-3xl font-bold font-kyokasho text-stone-800 mb-2">ひらがなコレクション</h1>
+                    <p className="text-stone-400 text-sm mb-10 font-kyokasho">かんじを かいて あつめよう！</p>
+                    <button
+                        onClick={handleGoogleLogin}
+                        disabled={loading}
+                        className="flex items-center gap-3 bg-white border-2 border-stone-200 rounded-2xl px-8 py-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-50">
+                        {loading ? (
+                            <span className="text-stone-500 font-bold">ログイン中...</span>
+                        ) : (
+                            <>
+                                <svg width="24" height="24" viewBox="0 0 24 24">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                </svg>
+                                <span className="text-stone-700 font-bold text-lg">Googleでログイン</span>
+                            </>
+                        )}
+                    </button>
+                    {error && <p className="mt-4 text-red-500 text-sm">{error}</p>}
+                </div>
+            );
+        };
+
         function App() {
+            const [session, setSession] = useState(null);
+            const [authLoading, setAuthLoading] = useState(true);
             const [currentUser, setCurrentUser] = useState(null);
-            if (!currentUser) return <ProfileSelect onSelect={setCurrentUser} />;
+
+            useEffect(() => {
+                // 現在のセッションを取得
+                supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                    setSession(session);
+                    setAuthLoading(false);
+                });
+                // セッションの変化を監視
+                const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+                    setSession(session);
+                    setAuthLoading(false);
+                    // ログアウト時はプロフィールもリセット
+                    if (!session) setCurrentUser(null);
+                });
+                return () => subscription.unsubscribe();
+            }, []);
+
+            if (authLoading) return (
+                <div className="min-h-screen flex items-center justify-center bg-[#fdfbf7]">
+                    <div className="text-4xl animate-bounce">📖</div>
+                </div>
+            );
+            if (!session) return <LoginScreen />;
+            if (!currentUser) return <ProfileSelect onSelect={setCurrentUser} authUserId={session.user.id} />;
             return <MainApp currentUser={currentUser} onLogout={() => setCurrentUser(null)} />;
         }
 
