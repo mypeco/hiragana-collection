@@ -88,32 +88,32 @@
             { char: 'さ', strokes: 3, word: 'さる',       icon: '🐵' },
             { char: 'し', strokes: 1, word: 'しんかんせん',icon: '🚄' },
             { char: 'す', strokes: 2, word: 'すいか',     icon: '🍉' },
-            { char: 'せ', strokes: 3, word: 'せっけん',   icon: '🧼' },
+            { char: 'せ', strokes: 3, word: 'せっけん',   icon: '🧼', trickyStroke: true },
             { char: 'そ', strokes: 1, word: 'そうじ',     icon: '🧹' },
             { char: 'た', strokes: 4, word: 'たこ',       icon: '🐙' },
             { char: 'ち', strokes: 2, word: 'ちょうちょ', icon: '🦋' },
             { char: 'つ', strokes: 1, word: 'つき',       icon: '🌙' },
             { char: 'て', strokes: 1, word: 'てがみ',     icon: '✉️' },
             { char: 'と', strokes: 2, word: 'とけい',     icon: '⌚' },
-            { char: 'な', strokes: 4, word: 'なす',       icon: '🍆' },
+            { char: 'な', strokes: 4, word: 'なす',       icon: '🍆', trickyStroke: true },
             { char: 'に', strokes: 3, word: 'にわとり',   icon: '🐔' },
             { char: 'ぬ', strokes: 2, word: 'ぬいぐるみ', icon: '🧸' },
             { char: 'ね', strokes: 2, word: 'ねこ',       icon: '🐱' },
             { char: 'の', strokes: 1, word: 'のりもの',   icon: '🚗' },
             { char: 'は', strokes: 3, word: 'はさみ',     icon: '✂️' },
             { char: 'ひ', strokes: 1, word: 'ひまわり',   icon: '🌻' },
-            { char: 'ふ', strokes: 4, word: 'ふうせん',   icon: '🎈' },
+            { char: 'ふ', strokes: 4, word: 'ふうせん',   icon: '🎈', trickyStroke: true },
             { char: 'へ', strokes: 1, word: 'へび',       icon: '🐍' },
             { char: 'ほ', strokes: 4, word: 'ほん',       icon: '📖' },
             { char: 'ま', strokes: 3, word: 'まど',       icon: '🪟' },
             { char: 'み', strokes: 2, word: 'みつばち',   icon: '🐝' },
             { char: 'む', strokes: 3, word: 'むし',       icon: '🐛' },
             { char: 'め', strokes: 2, word: 'めがね',     icon: '👓' },
-            { char: 'も', strokes: 3, word: 'もも',       icon: '🍑' },
-            { char: 'や', strokes: 3, word: 'やま',       icon: '⛰️' },
+            { char: 'も', strokes: 3, word: 'もも',       icon: '🍑', trickyStroke: true },
+            { char: 'や', strokes: 3, word: 'やま',       icon: '⛰️', trickyStroke: true },
             { char: 'ゆ', strokes: 2, word: 'ゆき',       icon: '⛄' },
-            { char: 'よ', strokes: 2, word: 'よつば',     icon: '🍀' },
-            { char: 'ら', strokes: 2, word: 'らくだ',     icon: '🐫' },
+            { char: 'よ', strokes: 2, word: 'よつば',     icon: '🍀', trickyStroke: true },
+            { char: 'ら', strokes: 2, word: 'らくだ',     icon: '🐫', trickyStroke: true },
             { char: 'り', strokes: 2, word: 'りんご',     icon: '🍎' },
             { char: 'る', strokes: 1, word: 'かえる',     icon: '🐸' },
             { char: 'れ', strokes: 2, word: 'れいぞうこ', icon: '🧊' },
@@ -405,7 +405,7 @@
             return <path ref={pathRef} d={d} className={`stroke-path ${status === 'animating' ? 'stroke-animating' : ''}`} stroke={strokeColor} strokeWidth={strokeWidth} style={dynamicStyle} />;
         };
 
-        const AnimatedKana = ({ paths, strokes, multiColor, onComplete, isKogaki }) => {
+        const AnimatedKana = ({ paths, strokes, multiColor, onComplete, isKogaki, trickyStroke }) => {
             const [status, setStatus] = useState('idle');
             const [currentStroke, setCurrentStroke] = useState(-1);
             
@@ -458,9 +458,12 @@
                             </svg>
                         </div>
                     </div>
-                    <button onClick={play} disabled={status === 'playing'} className={`flex items-center justify-center gap-1 w-full py-2 rounded-full font-bold shadow-sm transition-transform ${status === 'playing' ? 'bg-stone-100 text-stone-400 cursor-not-allowed' : 'bg-sky-500 text-white active:scale-95 hover:bg-sky-600 shadow-md'}`}>
+                    <button onClick={play} disabled={status === 'playing'} className={`relative flex items-center justify-center gap-1 w-full py-2 rounded-full font-bold shadow-sm transition-transform ${status === 'playing' ? 'bg-stone-100 text-stone-400 cursor-not-allowed' : trickyStroke ? 'bg-amber-500 text-white active:scale-95 hover:bg-amber-600 shadow-md' : 'bg-sky-500 text-white active:scale-95 hover:bg-sky-600 shadow-md'}`}>
+                        {trickyStroke && status !== 'playing' && (
+                            <span className="absolute -top-2 -right-1 text-sm leading-none" title="かきじゅんにちゅうい！">⚠️</span>
+                        )}
                         <Play className="w-4 h-4 fill-current" />
-                        <span className="text-xs">{status === 'playing' ? 'さいせいちゅう' : 'さいせい'}</span>
+                        <span className="text-xs">{status === 'playing' ? 'さいせいちゅう' : trickyStroke ? 'かきじゅんちゅうい！' : 'さいせい'}</span>
                     </button>
                 </div>
             );
@@ -515,36 +518,65 @@
             };
 
             const handleImport = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                if (!window.confirm("データを読み込みます。いまのデータはすべて消えて上書きされますが、いいですか？\n（もとに戻すことはできません）")) {
-                    e.target.value = ''; 
-                    return;
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // 摩擦の解消：アカウント移行か、単なる復元かを選択させる
+    const isMigration = window.confirm(
+        "【かくにん】\nちがうGoogleアカウントへ データをうつしますか？\n" +
+        "（「はい」をえらぶと、新しいアカウント用にIDを書き換えて移植します）"
+    );
+
+    if (!window.confirm("データを読み込みます。いまのデータはすべて消えて上書きされますが、いいですか？\n（もとに戻すことはできません）")) {
+        e.target.value = ''; 
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const data = JSON.parse(event.target.result);
+            if (!data.version || !data.users || !data.settings) {
+                alert("正しいファイルを選んでね。");
+                return; 
+            }
+
+            // 移植モードの場合：IDと同期フラグを強制リセット
+            if (isMigration) {
+                // ① ユーザーの外部キー（Supabase連携用ID）を新造
+                if (data.users) {
+                    data.users = data.users.map(u => ({
+                        ...u,
+                        profileId: crypto.randomUUID()
+                    }));
                 }
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                    try {
-                        const data = JSON.parse(event.target.result);
-                        if (!data.version || !data.users || !data.settings) {
-                            alert("正しいファイルを選んでね。");
-                            return; 
-                        }
-                        await db.transaction('rw', db.users, db.settings, db.practices, db.bestShots, db.readWords, async () => {
-                            if (data.users) { await db.users.clear(); await db.users.bulkPut(data.users); }
-                            if (data.settings) { await db.settings.clear(); await db.settings.bulkPut(data.settings); }
-                            if (data.practices) { await db.practices.clear(); await db.practices.bulkPut(data.practices); }
-                            if (data.bestShots) { await db.bestShots.clear(); await db.bestShots.bulkPut(data.bestShots); }
-                            if (data.readWords) { await db.readWords.clear(); await db.readWords.bulkPut(data.readWords); }
-                        });
-                        alert("データのふくげんがおわりました！アプリを再起動します。");
-                        window.location.reload();
-                    } catch (err) {
-                        console.error("インポートに失敗しました:", err);
-                        alert("データがこわれているか、読み込めませんでした。");
-                    }
-                };
-                reader.readAsText(file);
-            };
+                
+                // ② データの送信済みフラグを「未送信」に巻き戻す関数
+                const resetSync = (arr) => arr ? arr.map(item => ({ ...item, synced: false })) : [];
+                
+                if (data.bestShots) data.bestShots = resetSync(data.bestShots);
+                if (data.readWords) data.readWords = resetSync(data.readWords);
+                
+                console.log("[Import] アカウント移植モードでデータを変換しました");
+            }
+
+            await db.transaction('rw', db.users, db.settings, db.practices, db.bestShots, db.readWords, async () => {
+                if (data.users) { await db.users.clear(); await db.users.bulkPut(data.users); }
+                if (data.settings) { await db.settings.clear(); await db.settings.bulkPut(data.settings); }
+                if (data.practices) { await db.practices.clear(); await db.practices.bulkPut(data.practices); }
+                if (data.bestShots) { await db.bestShots.clear(); await db.bestShots.bulkPut(data.bestShots); }
+                if (data.readWords) { await db.readWords.clear(); await db.readWords.bulkPut(data.readWords); }
+            });
+
+            alert(isMigration ? "データの移植がおわりました！アプリを再起動します。" : "データのふくげんがおわりました！アプリを再起動します。");
+            window.location.reload();
+        } catch (err) {
+            console.error("インポートに失敗しました:", err);
+            alert("データがこわれているか、読み込めませんでした。");
+        }
+    };
+    reader.readAsText(file);
+};
 
             return (
                 <div className="p-6 max-w-5xl mx-auto bg-white min-h-screen">
@@ -1228,7 +1260,7 @@
                                         <Loader className="w-8 h-8 mb-2" />
                                     </div>
                                 ) : svgPaths ? (
-                                    <AnimatedKana paths={svgPaths} strokes={targetKanji.strokes} multiColor={settings.partColor} onComplete={() => setIsGuideWatched(true)} isKogaki={['ゃ','ゅ','ょ','っ'].includes(targetKanji.char)} />
+                                    <AnimatedKana paths={svgPaths} strokes={targetKanji.strokes} multiColor={settings.partColor} onComplete={() => setIsGuideWatched(true)} isKogaki={['ゃ','ゅ','ょ','っ'].includes(targetKanji.char)} trickyStroke={targetKanji.trickyStroke} />
                                 ) : (
                                     <div className="w-full aspect-square bg-white rounded-xl shadow-md border-4 border-orange-200 relative select-none">
                                         <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
@@ -3231,4 +3263,3 @@
     </script>
 </body>
 </html>
-
