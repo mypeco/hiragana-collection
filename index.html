@@ -296,6 +296,53 @@
             bestShots: '[userId+char], userId', 
             readWords: '[userId+wordId], userId' 
         });
+        // v2: syncedフラグ追加（オフライン未送信管理）
+        db.version(2).stores({ 
+            users: '++id', 
+            settings: 'userId', 
+            practices: '++id, userId, [userId+char]', 
+            bestShots: '[userId+char], userId, synced', 
+            readWords: '[userId+wordId], userId, synced' 
+        });
+
+        // ▼ 未送信データをSupabaseに送る関数
+        const syncPendingData = async (userId, profileId) => {
+            if (!navigator.onLine) return;
+            try {
+                const pendingShots = await db.bestShots
+                    .where('userId').equals(userId)
+                    .filter(s => s.synced === false)
+                    .toArray();
+                for (const shot of pendingShots) {
+                    await supabaseClient.from('best_shots').upsert({
+                        user_id: profileId,
+                        char: shot.char,
+                        strokes_data: shot.strokes,
+                        type: shot.type || 'best',
+                        timestamp: shot.timestamp || Date.now(),
+                        app_type: 'hiragana'
+                    });
+                    await db.bestShots.put({ ...shot, synced: true });
+                }
+                const pendingWords = await db.readWords
+                    .where('userId').equals(userId)
+                    .filter(w => w.synced === false)
+                    .toArray();
+                for (const word of pendingWords) {
+                    await supabaseClient.from('read_words').upsert({
+                        user_id: profileId,
+                        word_id: word.wordId,
+                        app_type: 'hiragana'
+                    });
+                    await db.readWords.put({ ...word, synced: true });
+                }
+                if (pendingShots.length > 0 || pendingWords.length > 0) {
+                    console.log(`[Sync] 未送信データを送信: shots=${pendingShots.length}, words=${pendingWords.length}`);
+                }
+            } catch(e) {
+                console.warn('[Sync] 未送信データの送信失敗:', e);
+            }
+        };
 
         const isTargetChar = (char) => /[\u3040-\u309F\u4e00-\u9faf]/.test(char);
 
@@ -2138,7 +2185,25 @@
                     // ③ profileIdが設定されていればそれをSupabaseのキーに使う
                     const supabaseId = currentUser.profileId || String(currentUser.id);
 
-                    if (currentUser && typeof supabaseClient !== 'undefined') {
+                    const savedSettings = await db.settings.get(currentUser.id);
+                    if (savedSettings) setSettings(prev => ({ ...prev, ...savedSettings }));
+
+                    const shots = await db.bestShots.where('userId').equals(currentUser.id).toArray();
+
+                    if (shots.length > 0) {
+                        // ▼ Dexieにデータあり → Supabaseスキップ
+                        const map = {};
+                        shots.forEach(s => map[s.char] = s);
+                        setBestShots(map);
+                        prevTotalRef.current = shots.length;
+
+                        const reads = await db.readWords.where('userId').equals(currentUser.id).toArray();
+                        setReadWords(reads.map(r => r.wordId));
+
+                        // 未送信データをバックグラウンドで送信
+                        syncPendingData(currentUser.id, supabaseId);
+                    } else if (navigator.onLine) {
+                        // ▼ Dexieが空 + オンライン → Supabaseから復元
                         try {
                             await supabaseClient.from('profiles').upsert({
                                 id: supabaseId,
@@ -2152,75 +2217,51 @@
 
                         try {
                             const { data: remoteShots } = await supabaseClient
-                                .from('best_shots')
-                                .select('*')
-                                .eq('user_id', supabaseId)
-                                .eq('app_type', 'hiragana');
-
+                                .from('best_shots').select('*')
+                                .eq('user_id', supabaseId).eq('app_type', 'hiragana');
                             if (remoteShots && remoteShots.length > 0) {
+                                const map = {};
                                 for (const remote of remoteShots) {
-                                    const local = await db.bestShots.get({
-                                        userId: currentUser.id,
-                                        char: remote.char
-                                    });
-                                    if (!local || remote.timestamp > local.timestamp) {
-                                        await db.bestShots.put({
-                                            userId: currentUser.id,
-                                            char: remote.char,
-                                            strokes: remote.strokes_data,
-                                            type: remote.type,
-                                            timestamp: remote.timestamp,
-                                            image: local?.image || null
-                                        });
-                                    }
+                                    const local = { userId: currentUser.id, char: remote.char, strokes: remote.strokes_data, type: remote.type, timestamp: remote.timestamp, synced: true };
+                                    await db.bestShots.put(local);
+                                    map[remote.char] = local;
                                 }
+                                setBestShots(map);
+                                prevTotalRef.current = Object.keys(map).length;
                             }
-                        } catch(e) { console.error("Supabaseからの読み戻しエラー:", e); }
+                        } catch(e) { console.error("Supabase復元エラー:", e); }
 
-                        // read_wordsをSupabaseから読み込み
                         try {
                             const { data: remoteWords } = await supabaseClient
-                                .from('read_words')
-                                .select('*')
-                                .eq('user_id', supabaseId)
-                                .eq('app_type', 'hiragana');
+                                .from('read_words').select('*')
+                                .eq('user_id', supabaseId).eq('app_type', 'hiragana');
                             if (remoteWords && remoteWords.length > 0) {
                                 for (const rw of remoteWords) {
-                                    await db.readWords.put({ userId: currentUser.id, wordId: rw.word_id });
+                                    await db.readWords.put({ userId: currentUser.id, wordId: rw.word_id, synced: true });
                                 }
+                                setReadWords(remoteWords.map(w => w.word_id));
                             }
-                        } catch(e) { console.error("read_words読み込みエラー:", e); }
+                        } catch(e) { console.error("read_words復元エラー:", e); }
 
-                        // hall_of_fameをSupabaseから読み込み（ローカルが空の場合のみ上書き）
                         try {
                             const { data: prof } = await supabaseClient
-                                .from('profiles')
-                                .select('hall_of_fame')
-                                .eq('id', supabaseId)
-                                .eq('app_type', 'hiragana')
-                                .single();
+                                .from('profiles').select('hall_of_fame')
+                                .eq('id', supabaseId).eq('app_type', 'hiragana').single();
                             if (prof?.hall_of_fame?.length > 0) {
                                 const localSt = await db.settings.get(currentUser.id) || {};
                                 if (!localSt.hallOfFame || localSt.hallOfFame.length === 0) {
                                     await db.settings.put({ userId: currentUser.id, ...localSt, hallOfFame: prof.hall_of_fame });
                                 }
                             }
-                        } catch(e) { console.error("hall_of_fame読み込みエラー:", e); }
+                        } catch(e) { console.error("hall_of_fame復元エラー:", e); }
                     }
-
-                    const savedSettings = await db.settings.get(currentUser.id);
-                    if (savedSettings) setSettings(prev => ({ ...prev, ...savedSettings }));
-
-                    const shots = await db.bestShots.where('userId').equals(currentUser.id).toArray();
-                    const map = {};
-                    shots.forEach(s => map[s.char] = s);
-                    setBestShots(map);
-                    prevTotalRef.current = shots.length; // 節目チェック用に初期値を設定
-
-                    const reads = await db.readWords.where('userId').equals(currentUser.id).toArray();
-                    setReadWords(reads.map(r => r.wordId));
                 };
                 load();
+
+                // オンライン復帰時に未送信データを自動送信
+                const handleOnline = () => syncPendingData(currentUser.id, currentUser.profileId || String(currentUser.id));
+                window.addEventListener('online', handleOnline);
+                return () => window.removeEventListener('online', handleOnline);
             }, [currentUser]);
 
             const saveSettingsWrapper = useCallback(async (newSettings) => {
@@ -2248,39 +2289,48 @@
 
             const saveBestShot = async (char, practiceObj) => {
                 const nextShots = { ...bestShots, [char] : practiceObj };
-                await db.bestShots.put({ userId: currentUser.id, char: char, ...practiceObj });
+                const supabaseId = currentUser.profileId || String(currentUser.id);
+
+                // まずDexieに保存（synced:false = 未送信フラグ）
+                await db.bestShots.put({ userId: currentUser.id, char: char, ...practiceObj, synced: false });
                 setBestShots(nextShots);
 
-                // ③ profileIdが設定されていればそれをSupabaseのキーに使う
-                const supabaseId = currentUser.profileId || String(currentUser.id);
-                try {
-                    await supabaseClient.from('best_shots').upsert({
-                        user_id: supabaseId,
-                        app_type: 'hiragana',
-                        char: char,
-                        strokes_data: practiceObj.strokes,
-                        type: practiceObj.type,
-                        timestamp: practiceObj.timestamp
-                    });
-                } catch (err) {
-                    console.error("Supabase保存エラー:", err);
+                // オンラインならSupabaseにも送る
+                if (navigator.onLine) {
+                    try {
+                        await supabaseClient.from('best_shots').upsert({
+                            user_id: supabaseId,
+                            app_type: 'hiragana',
+                            char: char,
+                            strokes_data: practiceObj.strokes,
+                            type: practiceObj.type,
+                            timestamp: practiceObj.timestamp
+                        });
+                        await db.bestShots.put({ userId: currentUser.id, char: char, ...practiceObj, synced: true });
+                    } catch (err) {
+                        console.warn("[Sync] bestShots保存エラー（オフライン扱い）:", err);
+                    }
                 }
                 await db.practices.where({ userId: currentUser.id, char: char }).delete();
             };
 
             const handleWordRegistered = async (wordId) => {
-                await db.readWords.put({ userId: currentUser.id, wordId: wordId });
+                const supabaseId = currentUser.profileId || String(currentUser.id);
+                // まずDexieに保存（synced:false = 未送信フラグ）
+                await db.readWords.put({ userId: currentUser.id, wordId: wordId, synced: false });
                 setReadWords(prev => [...prev, wordId]);
                 setWordRegisterTarget(null);
-                // Supabaseにも保存
-                try {
-                    const supabaseId = currentUser.profileId || String(currentUser.id);
-                    await supabaseClient.from('read_words').upsert({
-                        user_id: supabaseId,
-                        word_id: wordId,
-                        app_type: 'hiragana'
-                    });
-                } catch(e) { console.error("read_words保存エラー:", e); }
+                // オンラインならSupabaseにも送る
+                if (navigator.onLine) {
+                    try {
+                        await supabaseClient.from('read_words').upsert({
+                            user_id: supabaseId,
+                            word_id: wordId,
+                            app_type: 'hiragana'
+                        });
+                        await db.readWords.put({ userId: currentUser.id, wordId: wordId, synced: true });
+                    } catch(e) { console.warn("[Sync] read_words保存エラー:", e); }
+                }
             };
 
             const handleSaveComplete = (char, practiceType) => {
