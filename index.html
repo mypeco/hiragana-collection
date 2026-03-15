@@ -3,24 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ひらがな">
-    <meta name="theme-color" content="#f97316">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
     <title>ひらがなコレクション</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Yuji+Boku&display=swap" rel="stylesheet">
     <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-       const SUPABASE_URL = "https://jlzxiewwttwkvetqhxzp.supabase.co";
-       const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsenhpZXd3dHR3a3ZldHFoeHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NTg1OTMsImV4cCI6MjA4ODQzNDU5M30.lTleRE8Bn8_Xjt1QGz8iKb-hnISk6Q02iTrHtl76L8Y";
-       const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    </script>
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dexie/dist/dexie.js"></script>
     <script src="kanjivg-cache.js"></script>
@@ -48,6 +36,9 @@
         .animate-slot-pop { animation: slot-pop 0.38s cubic-bezier(0.34,1.56,0.64,1) forwards; }
         @keyframes celebrate-in { 0% { opacity: 0; transform: scale(0.85); } 100% { opacity: 1; transform: scale(1); } }
         .animate-celebrate-in { animation: celebrate-in 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+        
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-25%); } }
+        .animate-bounce { animation: bounce 1s infinite; }
     </style>
 </head>
 <body>
@@ -56,14 +47,11 @@
     <script type="text/babel">
         const { useState, useRef, useEffect, useMemo, useCallback } = React;
 
-        // 【修正1】AudioContextをグローバルで1個だけ作る
-        // 毎回newすると iOSは上限を超えて音が出なくなるため
         let _audioCtx = null;
         const getAudioContext = () => {
             if (!_audioCtx || _audioCtx.state === 'closed') {
                 _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
-            // iOSはタップ後に "suspended" になることがある → 再開する
             if (_audioCtx.state === 'suspended') _audioCtx.resume();
             return _audioCtx;
         };
@@ -80,7 +68,7 @@
             { char: 'う', strokes: 2, word: 'うさぎ',     icon: '🐰' },
             { char: 'え', strokes: 2, word: 'えんぴつ',   icon: '✏️' },
             { char: 'お', strokes: 3, word: 'おにぎり',   icon: '🍙' },
-            { char: 'か', strokes: 3, word: 'かさ',       icon: '☂️' },
+            { char: 'か', strokes: 3, word: 'かさ',       icon: '☂️', trickyStroke: true },
             { char: 'き', strokes: 4, word: 'きつね',     icon: '🦊' },
             { char: 'く', strokes: 1, word: 'くま',       icon: '🐻' },
             { char: 'け', strokes: 3, word: 'けいと',     icon: '🧶' },
@@ -192,8 +180,6 @@
         const ICON_OPTIONS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🐨', '🐯', '🦁', '🚗', '🚀', '✈️', '🚂', '🚓', '🚑', '⚽', '⚾', '🏀', '🎾', '🍎', '🍓', '🍒', '🍇', '🍉', '☀️', '🌙', '🌟', '❄️', '🌈', '👑', '💎', '🎀', '🎵'];
         const DURATION_OPTIONS = [ { val: 1, label: '1日' }, { val: 3, label: '3日' }, { val: 7, label: '1週間' }, { val: 14, label: '2週間' }, { val: 30, label: '1ヶ月' } ];
 
-        // 【修正2】voices を起動時に1回だけ読み込んで使い回す
-        // Safariは getVoices() が最初に空配列を返すことがあるため
         let _cachedVoices = [];
         const loadVoices = () => {
             const v = window.speechSynthesis.getVoices();
@@ -288,6 +274,14 @@
             );
         };
 
+        const ShotDisplay = ({ shot, strokeWidth = 8, color = "black" }) => {
+            return (
+                <div className="relative w-full h-full">
+                    <SvgStroke strokes={shot.strokes} strokeWidth={strokeWidth} color={color} />
+                </div>
+            );
+        };
+
         const db = new Dexie("HiraganaPortfolioDB_v1");
         db.version(1).stores({ 
             users: '++id', 
@@ -296,53 +290,6 @@
             bestShots: '[userId+char], userId', 
             readWords: '[userId+wordId], userId' 
         });
-        // v2: syncedフラグ追加（オフライン未送信管理）
-        db.version(2).stores({ 
-            users: '++id', 
-            settings: 'userId', 
-            practices: '++id, userId, [userId+char]', 
-            bestShots: '[userId+char], userId, synced', 
-            readWords: '[userId+wordId], userId, synced' 
-        });
-
-        // ▼ 未送信データをSupabaseに送る関数
-        const syncPendingData = async (userId, profileId) => {
-            if (!navigator.onLine) return;
-            try {
-                const pendingShots = await db.bestShots
-                    .where('userId').equals(userId)
-                    .filter(s => s.synced === false)
-                    .toArray();
-                for (const shot of pendingShots) {
-                    await supabaseClient.from('best_shots').upsert({
-                        user_id: profileId,
-                        char: shot.char,
-                        strokes_data: shot.strokes,
-                        type: shot.type || 'best',
-                        timestamp: shot.timestamp || Date.now(),
-                        app_type: 'hiragana'
-                    });
-                    await db.bestShots.put({ ...shot, synced: true });
-                }
-                const pendingWords = await db.readWords
-                    .where('userId').equals(userId)
-                    .filter(w => w.synced === false)
-                    .toArray();
-                for (const word of pendingWords) {
-                    await supabaseClient.from('read_words').upsert({
-                        user_id: profileId,
-                        word_id: word.wordId,
-                        app_type: 'hiragana'
-                    });
-                    await db.readWords.put({ ...word, synced: true });
-                }
-                if (pendingShots.length > 0 || pendingWords.length > 0) {
-                    console.log(`[Sync] 未送信データを送信: shots=${pendingShots.length}, words=${pendingWords.length}`);
-                }
-            } catch(e) {
-                console.warn('[Sync] 未送信データの送信失敗:', e);
-            }
-        };
 
         const isTargetChar = (char) => /[\u3040-\u309F\u4e00-\u9faf]/.test(char);
 
@@ -458,9 +405,10 @@
                             </svg>
                         </div>
                     </div>
-                    <button onClick={play} disabled={status === 'playing'} className={`relative flex items-center justify-center gap-1 w-full py-2 rounded-full font-bold shadow-sm transition-transform ${status === 'playing' ? 'bg-stone-100 text-stone-400 cursor-not-allowed' : trickyStroke ? 'bg-sky-500 text-white active:scale-95 hover:bg-sky-600 shadow-md border-2 border-orange-400' : 'bg-sky-500 text-white active:scale-95 hover:bg-sky-600 shadow-md'}`}>
+                    {/* UI強化: trickyStroke対応 */}
+                    <button onClick={play} disabled={status === 'playing'} className={`relative flex items-center justify-center gap-1 w-full py-2.5 rounded-full font-bold transition-all shadow-md ${status === 'playing' ? 'bg-stone-100 text-stone-400 cursor-not-allowed shadow-none' : trickyStroke ? 'bg-red-50 text-red-600 border-4 border-red-500 hover:bg-red-100 active:scale-95' : 'bg-sky-500 text-white hover:bg-sky-600 active:scale-95'}`}>
                         {trickyStroke && status !== 'playing' && (
-                            <span className="absolute -right-3 top-1/2 -translate-y-1/2 text-xl leading-none">⚠️</span>
+                            <span className="absolute -top-3 -right-3 text-3xl leading-none drop-shadow-md animate-bounce">⚠️</span>
                         )}
                         <Play className="w-4 h-4 fill-current" />
                         <span className="text-xs">{status === 'playing' ? 'さいせいちゅう' : trickyStroke ? 'かきじゅんちゅうい！' : 'さいせい'}</span>
@@ -469,9 +417,6 @@
             );
         };
 
-        // =====================================================
-        // ▼ AdminScreen ― ③「↩️ もどる」ボタンに変更
-        // =====================================================
         const AdminScreen = ({ onBack, settings, saveSettings }) => {
             const fileInputRef = useRef(null);
             const [jaVoices, setJaVoices] = useState([]);
@@ -518,70 +463,61 @@
             };
 
             const handleImport = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+                const file = e.target.files[0];
+                if (!file) return;
 
-    // 摩擦の解消：アカウント移行か、単なる復元かを選択させる
-    const isMigration = window.confirm(
-        "【かくにん】\nちがうGoogleアカウントへ データをうつしますか？\n" +
-        "（「はい」をえらぶと、新しいアカウント用にIDを書き換えて移植します）"
-    );
+                const isMigration = window.confirm(
+                    "【かくにん】\nちがうGoogleアカウントへ データをうつしますか？\n" +
+                    "（「はい」をえらぶと、新しいアカウント用にIDを書き換えて移植します）"
+                );
 
-    if (!window.confirm("データを読み込みます。いまのデータはすべて消えて上書きされますが、いいですか？\n（もとに戻すことはできません）")) {
-        e.target.value = ''; 
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-        try {
-            const data = JSON.parse(event.target.result);
-            if (!data.version || !data.users || !data.settings) {
-                alert("正しいファイルを選んでね。");
-                return; 
-            }
-
-            // 移植モードの場合：IDと同期フラグを強制リセット
-            if (isMigration) {
-                // ① ユーザーの外部キー（Supabase連携用ID）を新造
-                if (data.users) {
-                    data.users = data.users.map(u => ({
-                        ...u,
-                        profileId: crypto.randomUUID()
-                    }));
+                if (!window.confirm("データを読み込みます。いまのデータはすべて消えて上書きされますが、いいですか？\n（もとに戻すことはできません）")) {
+                    e.target.value = ''; 
+                    return;
                 }
-                
-                // ② データの送信済みフラグを「未送信」に巻き戻す関数
-                const resetSync = (arr) => arr ? arr.map(item => ({ ...item, synced: false })) : [];
-                
-                if (data.bestShots) data.bestShots = resetSync(data.bestShots);
-                if (data.readWords) data.readWords = resetSync(data.readWords);
-                
-                console.log("[Import] アカウント移植モードでデータを変換しました");
-            }
 
-            await db.transaction('rw', db.users, db.settings, db.practices, db.bestShots, db.readWords, async () => {
-                if (data.users) { await db.users.clear(); await db.users.bulkPut(data.users); }
-                if (data.settings) { await db.settings.clear(); await db.settings.bulkPut(data.settings); }
-                if (data.practices) { await db.practices.clear(); await db.practices.bulkPut(data.practices); }
-                if (data.bestShots) { await db.bestShots.clear(); await db.bestShots.bulkPut(data.bestShots); }
-                if (data.readWords) { await db.readWords.clear(); await db.readWords.bulkPut(data.readWords); }
-            });
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (!data.version || !data.users || !data.settings) {
+                            alert("正しいファイルを選んでね。");
+                            return; 
+                        }
 
-            alert(isMigration ? "データの移植がおわりました！アプリを再起動します。" : "データのふくげんがおわりました！アプリを再起動します。");
-            window.location.reload();
-        } catch (err) {
-            console.error("インポートに失敗しました:", err);
-            alert("データがこわれているか、読み込めませんでした。");
-        }
-    };
-    reader.readAsText(file);
-};
+                        if (isMigration) {
+                            if (data.users) {
+                                data.users = data.users.map(u => ({
+                                    ...u,
+                                    profileId: crypto.randomUUID()
+                                }));
+                            }
+                            const resetSync = (arr) => arr ? arr.map(item => ({ ...item, synced: false })) : [];
+                            if (data.bestShots) data.bestShots = resetSync(data.bestShots);
+                            if (data.readWords) data.readWords = resetSync(data.readWords);
+                        }
+
+                        await db.transaction('rw', db.users, db.settings, db.practices, db.bestShots, db.readWords, async () => {
+                            if (data.users) { await db.users.clear(); await db.users.bulkPut(data.users); }
+                            if (data.settings) { await db.settings.clear(); await db.settings.bulkPut(data.settings); }
+                            if (data.practices) { await db.practices.clear(); await db.practices.bulkPut(data.practices); }
+                            if (data.bestShots) { await db.bestShots.clear(); await db.bestShots.bulkPut(data.bestShots); }
+                            if (data.readWords) { await db.readWords.clear(); await db.readWords.bulkPut(data.readWords); }
+                        });
+
+                        alert(isMigration ? "データの移植がおわりました！アプリを再起動します。" : "データのふくげんがおわりました！アプリを再起動します。");
+                        window.location.reload();
+                    } catch (err) {
+                        console.error("インポートに失敗しました:", err);
+                        alert("データがこわれているか、読み込めませんでした。");
+                    }
+                };
+                reader.readAsText(file);
+            };
 
             return (
                 <div className="p-6 max-w-5xl mx-auto bg-white min-h-screen">
                     <div className="flex justify-between items-center mb-6 border-b pb-4">
-                        {/* ③ 管理ページの戻るボタン：🏠を削除して ↩️ もどる に変更 */}
                         <button onClick={onBack} className="text-stone-500 flex items-center gap-1 bg-stone-100 px-4 py-2 rounded-full font-bold hover:bg-stone-200 transition-colors">
                             ↩️ もどる
                         </button>
@@ -592,7 +528,6 @@
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4">
-                        {/* 左カラム */}
                         <div className="space-y-6">
 
                             <div className="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm">
@@ -685,15 +620,15 @@
                                 </div>
                             </div>
 
-                            {/* ① 「目標枚数」セクションを削除 ― ここには何も置かない */}
-
+                            {/* 4段階の目標設定 */}
                             <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm">
                                 <h3 className="font-bold text-lg mb-1 text-indigo-800 flex items-center gap-2">🎯 れんしゅうの ながれ</h3>
                                 <p className="text-xs text-indigo-600 mb-3">各モードの目標回数を設定します。すべてのモードが完了すると、なかから1枚えらべます。0回にするとそのモードをスキップします。</p>
                                 {[
-                                    { key: 'traceTarget',  label: 'なぞり',   emoji: '✏️', activeStyle: { borderColor: '#0ea5e9', backgroundColor: '#e0f2fe', color: '#0369a1' }, defaultVal: 3 },
-                                    { key: 'blankTarget',  label: 'おてほん', emoji: '📝', activeStyle: { borderColor: '#22c55e', backgroundColor: '#dcfce7', color: '#15803d' }, defaultVal: 2 },
-                                    { key: 'testTarget',   label: 'みないで', emoji: '⭐', activeStyle: { borderColor: '#a855f7', backgroundColor: '#f3e8ff', color: '#7e22ce' }, defaultVal: 1 },
+                                    { key: 'traceAllTarget', label: 'なぞり',   emoji: '✏️', activeStyle: { borderColor: '#0ea5e9', backgroundColor: '#e0f2fe', color: '#0369a1' }, defaultVal: 1 },
+                                    { key: 'tenTarget',      label: 'てん',     emoji: '⚫️', activeStyle: { borderColor: '#f59e0b', backgroundColor: '#fef3c7', color: '#b45309' }, defaultVal: 1 },
+                                    { key: 'blankTarget',    label: 'おてほん', emoji: '👁️', activeStyle: { borderColor: '#22c55e', backgroundColor: '#dcfce7', color: '#15803d' }, defaultVal: 1 },
+                                    { key: 'testTarget',     label: 'みないで', emoji: '🙈', activeStyle: { borderColor: '#a855f7', backgroundColor: '#f3e8ff', color: '#7e22ce' }, defaultVal: 1 },
                                 ].map(({ key, label, emoji, activeStyle, defaultVal }) => (
                                     <div key={key} className="flex items-center gap-3 mb-2">
                                         <span className="w-20 text-sm font-bold text-stone-600">{emoji} {label}</span>
@@ -716,14 +651,13 @@
                             </div>
                         </div>
 
-                        {/* 右カラム */}
                         <div className="space-y-6">
                             <div className="bg-purple-50 p-4 rounded-xl border border-purple-200 shadow-sm">
                                 <h3 className="font-bold text-lg mb-1 text-purple-800 flex items-center gap-1"><Sparkles className="w-4 h-4"/> ギャラリーにかざる「合格ライン」</h3>
                                 <p className="text-xs text-purple-600 mb-3">どの書き方で仕上げた時に、一覧（コレクション）へ追加するかを決めます。</p>
                                 <div className="flex flex-col gap-2">
                                     <button onClick={() => saveSettings({...settings, completionLevel: 1})} className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${settings.completionLevel === 1 || !settings.completionLevel ? 'border-purple-500 bg-purple-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>
-                                        レベル1： なぞり・おてほん・みないで（どれでもOK）
+                                        レベル1： なぞり・てん・おてほん・みないで（どれでもOK）
                                     </button>
                                     <button onClick={() => saveSettings({...settings, completionLevel: 2})} className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${settings.completionLevel === 2 ? 'border-purple-500 bg-purple-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>
                                         レベル2： おてほん・みないで（自力で書けたらOK）
@@ -738,7 +672,7 @@
                                 <h3 className="font-bold text-lg mb-3">各モードの枠の色設定</h3>
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2"><div className={`w-3 h-3 rounded-full ${COLOR_OPTIONS.find(c=>c.id === settings.traceColor)?.bg || 'bg-sky-400'}`}></div> 「なぞり」モードのいろ</label>
+                                        <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2"><div className={`w-3 h-3 rounded-full ${COLOR_OPTIONS.find(c=>c.id === settings.traceColor)?.bg || 'bg-sky-400'}`}></div> 「なぞり」「てん」モードのいろ</label>
                                         <div className="grid grid-cols-5 gap-2">
                                             {COLOR_OPTIONS.map(color => (
                                                 <button key={`trace-${color.id}`} onClick={() => saveSettings({...settings, traceColor: color.id})} className={`w-full h-10 rounded-lg border-4 transition-all ${color.bg} ${settings.traceColor === color.id ? 'border-stone-400 scale-105 shadow-md' : 'border-transparent hover:border-stone-300'}`}></button>
@@ -777,7 +711,6 @@
                                 </div>
                             </div>
 
-                            {/* 別の端末で使うときの説明 */}
                             <div className="bg-sky-50 p-4 rounded-xl border border-sky-200 shadow-sm">
                                 <h3 className="font-bold text-lg mb-2 text-sky-800 flex items-center gap-2">📱 べつの端末でつかうとき</h3>
                                 <div className="space-y-3 text-sm text-sky-700">
@@ -805,25 +738,25 @@
             );
         };
 
-        // =====================================================
-        // ▼ PracticeStudio
-        // =====================================================
         const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onSaveBest, onSaveComplete, onOpenAdmin, onToggleSound }) => {
             const [isGuideWatched, setIsGuideWatched] = useState(false);
             const hand = settings.hand || 'right'; 
             
-            const [practiceMode, setPracticeMode] = useState('trace'); 
+            // デフォルトモードをtraceAllに変更
+            const [practiceMode, setPracticeMode] = useState('traceAll'); 
             const isTestMode = practiceMode === 'test';
             
             const [strokeWarning, setStrokeWarning] = useState(false); 
-
             const [practices, setPractices] = useState([]);
 
+            // 4段階対応のログ集計
             const sessionLogs = useMemo(() => ({
-                trace: practices.filter(p => p.type === 'trace').length,
+                traceAll: practices.filter(p => p.type === 'traceAll' || p.type === 'trace').length,
+                ten:  practices.filter(p => p.type === 'ten' || p.type === 'hint').length,
                 blank: practices.filter(p => p.type === 'blank').length,
                 test:  practices.filter(p => p.type === 'test').length,
             }), [practices]);
+            
             const [isAnimating, setIsAnimating] = useState(false);
             const [lastWrittenImage, setLastWrittenImage] = useState(null);
             const [hasDrawn, setHasDrawn] = useState(false);
@@ -842,30 +775,31 @@
             const isDrawingRef = useRef(false);
             const canvasContainerRef = useRef(null);
             const practicesStripRef = useRef(null);
-            const audioCtxRef = useRef(null);
-            const noiseSourceRef = useRef(null);
-            const noiseGainRef = useRef(null);
-            // setTimeout内で最新値を参照するためのref
+            
             const practiceModeRef = useRef(practiceMode);
-            const traceTargetRef = useRef(0);
+            const traceAllTargetRef = useRef(0);
+            const tenTargetRef = useRef(0);
             const blankTargetRef = useRef(0);
             const testTargetRef  = useRef(0);
 
-            // ① 各モードの目標回数をコンポーネントレベルで定義
-            const traceTarget = settings.traceTarget ?? 3;
-            const blankTarget = settings.blankTarget ?? 2;
+            // 4段階目標回数の取得
+            const traceAllTarget = settings.traceAllTarget ?? 1;
+            const tenTarget = settings.tenTarget ?? 1;
+            const blankTarget = settings.blankTarget ?? 1;
             const testTarget  = settings.testTarget  ?? 1;
-            // refを常に最新値に同期（setTimeout内のクロージャ問題対策）
+
             useEffect(() => { practiceModeRef.current = practiceMode; }, [practiceMode]);
             useEffect(() => {
-                traceTargetRef.current = traceTarget;
+                traceAllTargetRef.current = traceAllTarget;
+                tenTargetRef.current = tenTarget;
                 blankTargetRef.current = blankTarget;
                 testTargetRef.current  = testTarget;
-            }, [traceTarget, blankTarget, testTarget]);
+            }, [traceAllTarget, tenTarget, blankTarget, testTarget]);
 
-            // ① isGoalReached：全モードの目標をクリアしたら true
+            // isGoalReachedロジック更新
             const isGoalReached = 
-                (traceTarget === 0 || sessionLogs.trace >= traceTarget) &&
+                (traceAllTarget === 0 || sessionLogs.traceAll >= traceAllTarget) &&
+                (tenTarget === 0 || sessionLogs.ten >= tenTarget) &&
                 (blankTarget === 0 || sessionLogs.blank >= blankTarget) &&
                 (testTarget  === 0 || sessionLogs.test  >= testTarget);
 
@@ -1015,19 +949,7 @@
                 
                 setIsAnimating(true);
 
-                try {
-                    const columnName = `${practiceMode}_count`;
-                    const supabaseId = currentUser.profileId || String(currentUser.id);
-                    await supabaseClient.rpc('increment_practice_count', { 
-                        p_user_id: supabaseId,
-                        p_char: targetKanji.char, 
-                        p_column: columnName,
-                        p_app_type: 'hiragana'
-                    });
-                } catch (err) {
-                    console.error("Supabase保存エラー:", err);
-                }
-
+                // ▼ hintData の生成処理を完全に削除しました
                 const newPractice = {
                     userId: currentUser.id,
                     char: targetKanji.char,
@@ -1071,13 +993,20 @@
                     contextRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); 
                     allStrokesRef.current = [];
                     currentStrokeRef.current = [];
-                    // ▼ 自動モード遷移（refで最新値を参照）
+                    
+                    // 自動モード遷移ロジックの更新
                     const mode = practiceModeRef.current;
-                    const tT = traceTargetRef.current;
+                    const tAT = traceAllTargetRef.current;
+                    const teT = tenTargetRef.current;
                     const bT = blankTargetRef.current;
                     const tS = testTargetRef.current;
                     const nextMode = (() => {
-                        if (mode === 'trace' && tT > 0 && currentLogs.trace >= tT) {
+                        if ((mode === 'traceAll' || mode === 'trace') && tAT > 0 && currentLogs.traceAll >= tAT) {
+                            if (teT > 0) return 'ten';
+                            if (bT > 0) return 'blank';
+                            if (tS > 0) return 'test';
+                        }
+                        if ((mode === 'ten' || mode === 'hint') && teT > 0 && currentLogs.ten >= teT) {
                             if (bT > 0) return 'blank';
                             if (tS > 0) return 'test';
                         }
@@ -1094,15 +1023,19 @@
 
             const canSelect = (type) => {
                 if (completionLevel === 3 && type !== 'test') return false; 
-                if (completionLevel === 2 && type === 'trace') return false; 
+                if (completionLevel === 2 && (type === 'traceAll' || type === 'trace' || type === 'ten' || type === 'hint')) return false; 
                 return true; 
             };
 
             const traceTheme = COLOR_OPTIONS.find(c=>c.id===settings.traceColor) || COLOR_OPTIONS[0];
             const blankTheme = COLOR_OPTIONS.find(c=>c.id===settings.blankColor) || COLOR_OPTIONS[1];
             const testTheme = COLOR_OPTIONS.find(c=>c.id===settings.testColor) || COLOR_OPTIONS[3];
+            
+            // ▼ てんモードの色を、なぞりモードと同じ色に統一
+            const tenTheme = traceTheme; 
 
-            const borderColor = practiceMode === 'trace' ? traceTheme.hex : 
+            const borderColor = (practiceMode === 'trace' || practiceMode === 'traceAll') ? traceTheme.hex : 
+                                (practiceMode === 'ten' || practiceMode === 'hint') ? tenTheme.hex :
                                 practiceMode === 'blank' ? blankTheme.hex : 
                                 testTheme.hex; 
 
@@ -1132,7 +1065,6 @@
                             <div className="flex-1 flex justify-center">
                                 <div className="flex items-center gap-3 md:gap-6 bg-white px-4 py-3 md:px-8 md:py-4 rounded-3xl shadow-md border-2 border-amber-200 max-w-2xl w-full">
                                     
-                                    {/* 左：文字の目隠し */}
                                     <div className={`relative shrink-0 pr-3 md:pr-6 py-1 md:py-2 ${isTestMode ? 'border-transparent' : 'border-r-2 border-dashed border-stone-200'}`}>
                                         <div className="text-4xl sm:text-5xl md:text-6xl font-kyokasho text-stone-800 font-bold leading-none tracking-widest">【{targetKanji.char}】</div>
                                         {isTestMode && (
@@ -1143,7 +1075,6 @@
                                         )}
                                     </div>
 
-                                    {/* 右：絵文字（目隠し対象外）＋ ことば目隠し */}
                                     <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
                                         <span className="text-4xl sm:text-5xl md:text-6xl shrink-0 drop-shadow-sm">{targetKanji.icon}</span>
                                         <div className="relative flex-1 min-w-0">
@@ -1164,7 +1095,6 @@
                             <div className="w-20 shrink-0"></div> 
                         </div>
 
-                        {/* ▼ 練習ストリップ ① 新しい進捗バッジ */}
                         <div ref={practicesStripRef} className={`w-[95%] h-36 md:h-44 rounded-2xl p-3 md:p-4 flex gap-3 overflow-x-auto relative items-center transition-all duration-500 ${isGoalReached ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-4 border-amber-400 shadow-lg' : 'bg-white border-4 border-amber-200 shadow-sm'}`}
                             style={isGoalReached ? { boxShadow: '0 0 0 4px #fde68a44, 0 4px 24px #fbbf2420' } : {}}>
                             
@@ -1175,7 +1105,6 @@
                                 </div>
                             )}
                             
-                            {/* ゴール達成バッジ */}
                             {isGoalReached && practices.length > 0 && (
                                 <div className="absolute top-0 left-0 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-br-xl z-20 flex items-center gap-1 shadow"
                                     style={{ background: 'linear-gradient(90deg, #f59e0b, #f97316)' }}>
@@ -1183,23 +1112,28 @@
                                 </div>
                             )}
                             
-                            {/* ① モード別進捗バッジ */}
+                            {/* モード別進捗バッジの更新 */}
                             {!isGoalReached && (
                                 <div className="absolute top-0 left-0 bg-stone-500/80 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-br-xl z-20 flex items-center gap-1.5 shadow">
                                     <Lock className="w-3 h-3 shrink-0"/>
-                                    {traceTarget > 0 && (
-                                        <span className={`px-1 py-0.5 rounded ${sessionLogs.trace >= traceTarget ? 'text-green-300' : 'text-white/80'}`}>
-                                            ✏️{sessionLogs.trace}/{traceTarget}
+                                    {traceAllTarget > 0 && (
+                                        <span className={`px-1 py-0.5 rounded ${sessionLogs.traceAll >= traceAllTarget ? 'text-green-300' : 'text-white/80'}`}>
+                                            ✏️{sessionLogs.traceAll}/{traceAllTarget}
+                                        </span>
+                                    )}
+                                    {tenTarget > 0 && (
+                                        <span className={`px-1 py-0.5 rounded ${sessionLogs.ten >= tenTarget ? 'text-green-300' : 'text-white/80'}`}>
+                                            ⚫️{sessionLogs.ten}/{tenTarget}
                                         </span>
                                     )}
                                     {blankTarget > 0 && (
                                         <span className={`px-1 py-0.5 rounded ${sessionLogs.blank >= blankTarget ? 'text-green-300' : 'text-white/80'}`}>
-                                            📝{sessionLogs.blank}/{blankTarget}
+                                            👁️{sessionLogs.blank}/{blankTarget}
                                         </span>
                                     )}
                                     {testTarget > 0 && (
                                         <span className={`px-1 py-0.5 rounded ${sessionLogs.test >= testTarget ? 'text-green-300' : 'text-white/80'}`}>
-                                            ⭐{sessionLogs.test}/{testTarget}
+                                            🙈{sessionLogs.test}/{testTarget}
                                         </span>
                                     )}
                                 </div>
@@ -1207,7 +1141,8 @@
 
                             {practices.map((p, i) => {
                                 const isSelectable = canSelect(p.type);
-                                const colorTheme = p.type === 'trace' ? traceTheme : 
+                                const colorTheme = (p.type === 'traceAll' || p.type === 'trace') ? traceTheme :
+                                                   (p.type === 'ten' || p.type === 'hint') ? tenTheme :
                                                    p.type === 'blank' ? blankTheme : testTheme;
                                 
                                 return (
@@ -1229,11 +1164,20 @@
                                             ${savingId && savingId !== p.id ? 'opacity-0 scale-50' : ''}
                                             ${!isGoalReached || !isSelectable ? 'opacity-40 grayscale border-stone-200' + (!isSelectable && isGoalReached ? ' cursor-not-allowed' : '') : ''}`}>
                                         
-                                        <div className="w-full h-full p-1">
-                                            <SvgStroke strokes={p.strokes} strokeWidth={10} color="#374151" />
+                                        <div className="w-full h-full p-1 relative">
+                                            <ShotDisplay shot={p} strokeWidth={10} color="#374151" />
+                                            
+                                            {/* みないでモード時のカバー */}
+                                            {isTestMode && (
+                                                <div className="absolute inset-1 bg-stone-100/95 backdrop-blur-sm rounded-lg flex items-center justify-center z-10 border border-stone-200">
+                                                    <span className="text-2xl grayscale opacity-50">🙈</span>
+                                                </div>
+                                            )}
                                         </div>
                                         
-                                        {p.type === 'trace' && <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-sky-600 bg-sky-50 px-1.5 border border-sky-200 rounded-full whitespace-nowrap shadow-sm">なぞり</span>}
+                                        {/* ▼ 「てん」のラベルも、なぞりと同じ青系の配色に統一 */}
+                                        {(p.type === 'traceAll' || p.type === 'trace') && <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-sky-600 bg-sky-50 px-1.5 border border-sky-200 rounded-full whitespace-nowrap shadow-sm">なぞり</span>}
+                                        {(p.type === 'ten' || p.type === 'hint') && <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-sky-600 bg-sky-50 px-1.5 border border-sky-200 rounded-full whitespace-nowrap shadow-sm">てん</span>}
                                         {p.type === 'blank' && <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-green-700 bg-green-50 px-1.5 border border-green-200 rounded-full whitespace-nowrap shadow-sm">おてほん</span>}
                                         {p.type === 'test' && <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-purple-700 bg-purple-50 px-1.5 border border-purple-200 rounded-full whitespace-nowrap shadow-sm">みないで</span>}
                                     </div>
@@ -1280,53 +1224,50 @@
                                 
                                 <div className="absolute -top-10 right-0 flex bg-white rounded-full shadow-sm border p-0.5 z-20 overflow-hidden">
                                     {(() => {
-                                        const traceDone   = sessionLogs.trace;
-                                        const blankDone   = sessionLogs.blank;
-                                        const testDone    = sessionLogs.test;
-                                        const modeBtn = (mode, label, theme, target, done) => {
-                                            const remaining = target > 0 ? Math.max(0, target - done) : null;
-                                            const finished  = target > 0 && done >= target;
-                                            return (
-                                                <button key={mode} onClick={() => !hasDrawn && setPracticeMode(mode)} disabled={hasDrawn}
-                                                    className={`relative px-3 py-1 rounded-full text-xs font-bold transition-all ${practiceMode !== mode ? 'text-gray-400 hover:bg-gray-50' : ''} ${hasDrawn ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                                    style={practiceMode === mode ? { backgroundColor: `${theme.hex}22`, color: theme.hex } : {}}
-                                                >
-                                                    {label}
-                                                    {target > 0 && (
-                                                        <span className={`ml-1 text-[10px] font-bold px-1 py-0.5 rounded-full ${finished ? 'bg-green-100 text-green-600' : 'bg-stone-100 text-stone-400'}`}>
-                                                            {finished ? '✓' : `あと${remaining}`}
-                                                        </span>
-                                                    )}
-                                                </button>
-                                            );
-                                        };
+                                        const modeBtn = (mode, label, theme) => (
+                                            <button key={mode} onClick={() => !hasDrawn && setPracticeMode(mode)} disabled={hasDrawn}
+                                                className={`relative px-2 py-1 rounded-full text-[10px] md:text-xs font-bold transition-all ${practiceMode !== mode ? 'text-gray-400 hover:bg-gray-50' : ''} ${hasDrawn ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                style={practiceMode === mode ? { backgroundColor: `${theme.hex}22`, color: theme.hex } : {}}
+                                            >
+                                                {label}
+                                            </button>
+                                        );
                                         return (<>
-                                            {modeBtn('trace', 'なぞり',   traceTheme, traceTarget, traceDone)}
-                                            {modeBtn('blank', 'おてほん', blankTheme, blankTarget, blankDone)}
-                                            {modeBtn('test',  'みないで', testTheme,  testTarget,  testDone)}
+                                            {modeBtn('traceAll',  '✏️なぞり',   traceTheme)}
+                                            {modeBtn('ten',       '⚫️てん',     tenTheme)}
+                                            {modeBtn('blank',     '👁️おてほん', blankTheme)}
+                                            {modeBtn('test',      '🙈みないで', testTheme)}
                                         </>);
                                     })()}
                                 </div>
 
                                 <div className="relative w-full aspect-square bg-white rounded-2xl shadow-xl border-4 overflow-hidden cursor-crosshair transition-colors duration-300" style={{ borderColor: borderColor }}>
-                                    {practiceMode === 'trace' && (() => {
-                                        const isSmall = ['ゃ','ゅ','ょ','っ'].includes(targetKanji.char);
+                                    {(practiceMode === 'traceAll' || practiceMode === 'trace') && svgPaths && (
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 p-4">
+                                            <svg viewBox="0 0 109 109" className="w-full h-full opacity-30">
+                                                {svgPaths.map((p, i) => <path key={i} d={p.d} fill="none" strokeWidth={settings.traceWidth ?? 6} stroke={settings.partColor ? PART_COLORS[p.groupId % PART_COLORS.length] : '#e5e7eb'} opacity={settings.partColor ? "0.4" : "1"} strokeLinecap="round" strokeLinejoin="round" />)}
+                                            </svg>
+                                        </div>
+                                    )}
+
+                                    {(practiceMode === 'ten' || practiceMode === 'hint') && svgPaths && (() => {
+                                        const firstPath = svgPaths[0];
+                                        if (!firstPath) return null;
+                                        const m = firstPath.d.match(/M\s*([\d.]+)[,\s]+([\d.]+)/);
+                                        if (!m) return null;
                                         return (
-                                            <div className={`absolute pointer-events-none select-none z-0 flex items-center justify-center ${isSmall ? 'p-1' : 'inset-0 p-1'}`} style={isSmall ? {left:'-8%', bottom:'0%', width:'66%', height:'66%'} : {}}>
-                                                {svgPaths
-                                                    ? <svg viewBox="4 4 101 101" className="w-full h-full opacity-30">{svgPaths.map((p, i) => <path key={i} d={p.d} className="stroke-path stroke-guide" strokeWidth={settings.traceWidth ?? 6} stroke={settings.partColor ? PART_COLORS[p.groupId % PART_COLORS.length] : '#e5e7eb'} opacity={settings.partColor ? "0.4" : "1"} />)}</svg>
-                                                    : <div className="font-kyokasho text-gray-200 leading-none" style={{fontSize: isSmall ? '4rem' : '14rem'}}><span>{targetKanji.char}</span></div>
-                                                }
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 p-4">
+                                                <svg viewBox="0 0 109 109" className="w-full h-full">
+                                                    <circle cx={parseFloat(m[1])} cy={parseFloat(m[2])} r={2.5} fill="#1f2937" opacity="0.9" />
+                                                </svg>
                                             </div>
                                         );
                                     })()}
-                                    
-                                    {!isTestMode && (
-                                        <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
-                                            <div className="absolute top-1/2 w-full border-t-2 border-dashed border-red-300"></div>
-                                            <div className="absolute left-1/2 h-full border-l-2 border-dashed border-red-300"></div>
-                                        </div>
-                                    )}
+
+                                    <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
+                                        <div className="absolute top-1/2 w-full border-t-2 border-dashed border-red-300"></div>
+                                        <div className="absolute left-1/2 h-full border-l-2 border-dashed border-red-300"></div>
+                                    </div>
                                     <canvas ref={canvasRef} className="absolute inset-0 w-full h-full touch-none z-10" onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={move} onTouchEnd={end} />
                                     
                                     {isCanvasLocked && (
@@ -1405,36 +1346,15 @@
             );
         };
 
-        const ProfileSelect = ({ onSelect, authUserId }) => {
+        const ProfileSelect = ({ onSelect }) => {
             const [users, setUsers] = useState([]);
             const [isCreating, setIsCreating] = useState(false);
             const [editingUser, setEditingUser] = useState(null); 
             const [newName, setNewName] = useState('');
             const [newIcon, setNewIcon] = useState(ICON_OPTIONS[0]);
             const [newColor, setNewColor] = useState(USER_COLOR_OPTIONS[0]);
-            const [newProfileId, setNewProfileId] = useState(''); // 新規作成時のID入力用
-            const [copiedId, setCopiedId] = useState(null); // コピー完了のフィードバック用
 
             const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-
-            // IDをクリップボードにコピーする
-            const copyId = (profileId) => {
-                if (!profileId) return;
-                navigator.clipboard.writeText(profileId).then(() => {
-                    setCopiedId(profileId);
-                    setTimeout(() => setCopiedId(null), 2000);
-                }).catch(() => {
-                    // clipboard APIが使えない環境用のフォールバック
-                    const el = document.createElement('textarea');
-                    el.value = profileId;
-                    document.body.appendChild(el);
-                    el.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(el);
-                    setCopiedId(profileId);
-                    setTimeout(() => setCopiedId(null), 2000);
-                });
-            };
 
             useEffect(() => {
                 const loadUsers = async () => {
@@ -1451,30 +1371,6 @@
                     }
                     localUsers = await db.users.toArray();
                     setUsers(localUsers);
-                    try {
-                        // RLS対応：自分のauth_user_idのプロフィールだけ取得
-                        const { data: remoteProfiles } = await supabaseClient
-                            .from('profiles')
-                            .select('*')
-                            .eq('app_type', 'hiragana');
-                        if (remoteProfiles) {
-                            const localProfileIds = localUsers.map(u => u.profileId).filter(Boolean);
-                            for (const profile of remoteProfiles) {
-                                if (!localProfileIds.includes(String(profile.id))) {
-                                    const colorObj = USER_COLOR_OPTIONS.find(c => c.label === profile.color_label) || USER_COLOR_OPTIONS[0];
-                                    const restoredUser = { 
-                                        name: profile.name, 
-                                        icon: profile.icon, 
-                                        color: colorObj,
-                                        profileId: String(profile.id)
-                                    };
-                                    await db.users.add(restoredUser);
-                                }
-                            }
-                            const updatedUsers = await db.users.toArray();
-                            setUsers(updatedUsers);
-                        }
-                    } catch(e) { console.error("Supabaseユーザー同期エラー:", e); }
                     setIsLoadingUsers(false);
                 };
                 loadUsers();
@@ -1484,7 +1380,6 @@
                 setNewName('');
                 setNewIcon(ICON_OPTIONS[0]);
                 setNewColor(USER_COLOR_OPTIONS[0]);
-                setNewProfileId('');
                 setEditingUser(null);
                 setIsCreating(true);
             };
@@ -1501,57 +1396,27 @@
             const handleSave = async () => {
                 if (!newName.trim()) return;
                 if (editingUser) {
-                    // 編集時はprofileIdを変更しない（そのまま引き継ぐ）
                     const updatedUser = { ...editingUser, name: newName.trim(), icon: newIcon, color: newColor };
                     await db.users.put(updatedUser);
                     setUsers(prev => prev.map(u => u.id === editingUser.id ? updatedUser : u));
                     setIsCreating(false);
                     setEditingUser(null);
                 } else {
-                    // 入力されたIDがあればそれを使う、なければ自動でUUIDを生成する
-                    const profileId = newProfileId.trim() || crypto.randomUUID();
+                    const profileId = crypto.randomUUID();
                     const newUser = { name: newName.trim(), icon: newIcon, color: newColor, profileId };
                     const id = await db.users.add(newUser);
-                    // Supabaseにもprofileを保存（auth_user_idを付ける）
-                    try {
-                        await supabaseClient.from('profiles').upsert({
-                            id: profileId,
-                            auth_user_id: authUserId,
-                            app_type: 'hiragana',
-                            name: newUser.name,
-                            icon: newUser.icon,
-                            color_label: newUser.color?.label || 'Blue'
-                        });
-                    } catch(e) { console.error("プロフィール保存エラー:", e); }
                     onSelect({ ...newUser, id });
                 }
             };
 
-            const handleDeleteUser = async (userId, userName, userProfileId, e) => {
+            const handleDeleteUser = async (userId, userName, e) => {
                 e.stopPropagation(); 
-                // ③ SupabaseではprofileId（設定済みの場合）またはuserIdを使う
-                const supabaseKey = userProfileId || String(userId);
                 if (window.confirm(`${userName} の データを ぜんぶ けしますか？\n（けした データは もとにもどせません）`)) {
                     await db.users.delete(userId);
                     await db.settings.where({ userId: userId }).delete();
                     await db.practices.where({ userId: userId }).delete();
                     await db.bestShots.where({ userId: userId }).delete();
                     await db.readWords.where({ userId: userId }).delete();
-
-                    try {
-                        await supabaseClient
-                            .from('profiles')
-                            .delete()
-                            .eq('id', supabaseKey)
-                            .eq('app_type', 'hiragana');
-                        await supabaseClient
-                            .from('best_shots')
-                            .delete()
-                            .eq('user_id', supabaseKey)
-                            .eq('app_type', 'hiragana');
-                    } catch(e) {
-                        console.error("Supabase削除エラー:", e);
-                    }
 
                     setUsers(prev => prev.filter(u => u.id !== userId));
                 }
@@ -1563,11 +1428,11 @@
                         <h1 className="text-2xl font-bold mb-6 text-stone-800 font-kyokasho">
                             {editingUser ? 'プロフィールを なおす' : 'あたらしく つくる'}
                         </h1>
-                        <input type="text" placeholder="なまえ" value={newName} onChange={e => setNewName(e.target.value)} className="w-full text-center text-2xl p-4 rounded-xl border-4 border-sky-200 focus:border-sky-400 outline-none mb-6 font-kyokasho shadow-sm" />
+                        <input type="text" placeholder="なまえ" value={newName} onChange={e => setNewName(e.target.value)} className="w-full text-center text-2xl p-4 rounded-xl border-4 border-amber-200 focus:border-amber-400 outline-none mb-6 font-kyokasho shadow-sm" />
                         <div className="w-full mb-6">
                             <p className="font-bold text-stone-500 mb-2 text-center">アイコンを えらぶ</p>
                             <div className="grid grid-cols-6 gap-2 h-48 overflow-y-auto p-3 bg-white rounded-xl border-2 border-stone-100 shadow-inner">
-                                {ICON_OPTIONS.map(icon => <button key={icon} onClick={() => setNewIcon(icon)} className={`text-3xl p-1 rounded-lg transition-transform ${newIcon === icon ? 'bg-sky-100 ring-4 ring-sky-400 scale-110' : 'hover:bg-stone-50'}`}>{icon}</button>)}
+                                {ICON_OPTIONS.map(icon => <button key={icon} onClick={() => setNewIcon(icon)} className={`text-3xl p-1 rounded-lg transition-transform ${newIcon === icon ? 'bg-amber-100 ring-4 ring-amber-400 scale-110' : 'hover:bg-stone-50'}`}>{icon}</button>)}
                             </div>
                         </div>
                         <div className="w-full mb-8">
@@ -1576,40 +1441,10 @@
                                 {USER_COLOR_OPTIONS.map(color => <button key={color.label} onClick={() => setNewColor(color)} className={`w-12 h-12 rounded-full ${color.class} ${color.border} shadow-sm border-2 transition-all flex items-center justify-center ${newColor.label === color.label ? 'ring-4 ring-stone-400 scale-110' : 'opacity-50 hover:opacity-100'}`} />)}
                             </div>
                         </div>
-                        {/* 新規作成時：IDを入力できる欄（他の端末のデータを引き継ぐとき用） */}
-                        {!editingUser && (
-                            <div className="w-full mb-6">
-                                <div className="flex items-center gap-2 mb-2 justify-center">
-                                    <p className="text-xs font-bold text-stone-400">🔑 すでにIDをもっているひとは ここに入れてね</p>
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="IDをもっていないひとは からっぽでOK！"
-                                    value={newProfileId}
-                                    onChange={e => setNewProfileId(e.target.value)}
-                                    className="w-full text-center text-xs p-3 rounded-xl border-2 border-stone-200 focus:border-sky-300 outline-none font-mono text-stone-500 bg-stone-50 shadow-inner"
-                                />
-                                <p className="text-[11px] text-stone-300 text-center mt-1.5">からっぽのままだと あたらしいIDが じどうでつくられるよ</p>
-                            </div>
-                        )}
-                        {/* 編集時のみ：プロフィールIDを表示（変更不可） */}
-                        {editingUser?.profileId && (
-                            <div className="w-full mb-6 flex flex-col items-center gap-2">
-                                <p className="text-xs text-stone-400 font-bold">🔑 じぶんのID（かえられないよ）</p>
-                                <div className="flex items-center gap-2">
-                                    <span className="font-mono text-xs text-stone-400 select-all">{editingUser.profileId}</span>
-                                    <button
-                                        onClick={() => copyId(editingUser.profileId)}
-                                        className="shrink-0 px-2 py-1 rounded-lg font-bold text-xs transition-all bg-stone-100 text-stone-500 hover:bg-sky-100 hover:text-sky-600 active:scale-95"
-                                    >
-                                        {copiedId === editingUser.profileId ? '✅ コピーした！' : '📋 コピー'}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+
                         <div className="flex gap-4 w-full">
                             <button onClick={() => { setIsCreating(false); setEditingUser(null); }} className="flex-1 py-4 rounded-full font-bold text-stone-500 bg-stone-100 active:scale-95 transition-transform">もどる</button>
-                            <button onClick={handleSave} disabled={!newName.trim()} className="flex-1 py-4 rounded-full font-bold text-white bg-sky-500 disabled:opacity-50 active:scale-95 shadow-md transition-transform">ほぞんする</button>
+                            <button onClick={handleSave} disabled={!newName.trim()} className="flex-1 py-4 rounded-full font-bold text-white bg-amber-500 disabled:opacity-50 active:scale-95 shadow-md transition-transform">ほぞんする</button>
                         </div>
                     </div>
                 );
@@ -1617,7 +1452,7 @@
 
             return (
                 <div className="p-6 max-w-md mx-auto min-h-screen flex flex-col items-center justify-center animate-fade-in">
-                    <h1 className="text-3xl font-bold mb-8 text-sky-700 font-kyokasho">だれが あそぶ？</h1>
+                    <h1 className="text-3xl font-bold mb-8 text-amber-600 font-kyokasho">だれが あそぶ？</h1>
                     <div className="w-full space-y-4 mb-8">
                         {users.length === 0 && <div className="text-center text-stone-400 font-bold py-8">まだ だれも いません</div>}
                         {users.map(user => (
@@ -1628,23 +1463,19 @@
                                         <span className="text-2xl font-bold font-kyokasho tracking-widest">{user.name}</span>
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0 ml-2">
-                                        <button onClick={(e) => handleStartEdit(user, e)} className="w-10 h-10 rounded-full bg-white/50 text-stone-500 hover:bg-sky-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="プロフィールをなおす">
+                                        <button onClick={(e) => handleStartEdit(user, e)} className="w-10 h-10 rounded-full bg-white/50 text-stone-500 hover:bg-amber-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="プロフィールをなおす">
                                             <EditIcon className="w-5 h-5"/>
                                         </button>
-                                        <button onClick={(e) => handleDeleteUser(user.id, user.name, user.profileId, e)} className="w-10 h-10 rounded-full bg-white/50 text-stone-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="このデータをけす">
+                                        <button onClick={(e) => handleDeleteUser(user.id, user.name, e)} className="w-10 h-10 rounded-full bg-white/50 text-stone-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="このデータをけす">
                                             <X className="w-5 h-5"/>
                                         </button>
                                     </div>
                                 </div>
-                                {/* プロフィールIDの表示は編集画面に移動したため、ここには表示しない */}
                             </div>
                         ))}
                     </div>
                     <button onClick={handleStartCreate} className="flex items-center justify-center gap-2 w-full py-4 rounded-full font-bold text-stone-500 bg-white border-2 border-dashed border-stone-300 hover:bg-stone-50 active:scale-95 transition-transform">
                         <Sparkles className="w-5 h-5"/> あたらしく つくる
-                    </button>
-                    <button onClick={() => supabaseClient.auth.signOut()} className="mt-4 text-xs text-stone-400 underline hover:text-stone-600">
-                        ログアウト
                     </button>
                 </div>
             );
@@ -1760,19 +1591,14 @@
             }
         };
 
-        // =====================================================
-        // ▼ StarShowerOverlay ― 節目ごとの★シャワー演出
-        // =====================================================
         const StarShowerOverlay = ({ milestone, isFinal, onDismiss, starColorPalette }) => {
             const canvasRef = useRef(null);
             const animRef  = useRef(null);
 
-            // 節目サウンド
             const playMilestoneSound = (isFinal) => {
                 try {
                     const ac = getAudioContext();
                     if (isFinal) {
-                        // 75個達成 ─ 豪華なファンファーレ
                         const notes = [
                             { freq: 523, t: 0 },
                             { freq: 659, t: 0.1 },
@@ -1796,7 +1622,6 @@
                             o.stop(ac.currentTime + t + 0.5);
                         });
                     } else {
-                        // 途中節目 ─ 短い音
                         const notes = milestone === 70
                             ? [659, 784, 1047, 1319]
                             : [659, 784, 1047];
@@ -1826,10 +1651,7 @@
                 const ctx = canvas.getContext('2d');
                 const W = canvas.width;
                 const H = canvas.height;
-                const halfH = H / 2;
 
-                // モード別の枚数から星の色配列を組み立てる
-                // 例: なぞり12・おてほん5・みないで3 → 青12・緑5・紫3個
                 const lighten = (hex, amt) => {
                     const r = Math.min(255, parseInt(hex.slice(1,3), 16) + amt);
                     const g = Math.min(255, parseInt(hex.slice(3,5), 16) + amt);
@@ -1841,34 +1663,29 @@
                     { hex: '#4ade80', count: Math.floor(milestone / 3) },
                     { hex: '#c084fc', count: milestone - Math.floor(milestone / 3) * 2 },
                 ];
-                // 各モードの色をcount枚ぶん配列に入れる（明るいバリエーションも少し混ぜる）
                 const starColors = [];
                 palette.forEach(({ hex, count: c }) => {
                     for (let i = 0; i < c; i++) {
                         starColors.push(Math.random() < 0.25 ? lighten(hex, 80) : hex);
                     }
                 });
-                // 足りない分は '#FFD700' で補う（念のため）
                 while (starColors.length < milestone) starColors.push('#FFD700');
-                // シャッフル（同じ色が固まらないように）
                 for (let i = starColors.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [starColors[i], starColors[j]] = [starColors[j], starColors[i]];
                 }
 
-                // 星の数 = 節目の数（10個なら⭐10個！）
                 const count = milestone;
 
                 const stars = Array.from({ length: count }, (_, idx) => ({
                     x:        Math.random() * W,
-                    y:        -30 - Math.random() * H * 0.8,   // 時間差が出るよう上からバラバラに
+                    y:        -30 - Math.random() * H * 0.8,
                     size:     isFinal ? (Math.random() * 50 + 30) : (Math.random() * 14 + 8),
                     speed:    isFinal ? (Math.random() * 2 + 4) : (Math.random() * 3.5 + 2.5),
                     color:    starColors[idx % starColors.length],
                     rotation: Math.random() * Math.PI * 2,
                     rotSpeed: (Math.random() - 0.5) * 0.08,
                     settled:  false,
-                    // 着地Y = 画面下端から少しランダムにずらす（自然な積もり感）
                     settledY: H - (Math.random() * 30 + 10),
                     swayOff:  Math.random() * Math.PI * 2,
                     swayAmp:  Math.random() * 1.5 + 0.3,
@@ -1910,7 +1727,6 @@
                             if (!star.settled) {
                                 star.y += star.speed;
                                 star.rotation += star.rotSpeed;
-                                // settledY（初期化時に決定済み）に到達したらそこで止まる
                                 if (star.y >= star.settledY) {
                                     star.settled = true;
                                 }
@@ -1918,10 +1734,8 @@
                             drawStar(star.x, star.settled ? star.settledY : star.y,
                                      star.size, star.color, star.rotation, 1);
                         });
-                        // 自動終了しない（タップまで残る）
 
                     } else {
-                        // 途中節目: 4秒間、2.5秒後からフェードアウト
                         stars.forEach(star => {
                             star.y += star.speed;
                             star.x += Math.sin(t * 3 + star.swayOff) * star.swayAmp;
@@ -1958,7 +1772,6 @@
                     <canvas ref={canvasRef} style={{ position:'absolute', inset:0, width:'100%', height:'100%', display:'block' }} />
 
                     {isFinal ? (
-                        /* ─── 75個達成：タップするまで消えない ─── */
                         <div className="absolute inset-0 flex flex-col items-center justify-start pointer-events-none"
                              style={{ paddingTop: '10vh' }}>
                             <div className="text-center animate-bounce-in px-6">
@@ -1981,7 +1794,6 @@
                             </div>
                         </div>
                     ) : (
-                        /* ─── 途中節目：4秒で自動消える ─── */
                         <div className="absolute inset-x-0 flex justify-center pointer-events-none"
                              style={{ top:'30%', transform:'translateY(-50%)' }}>
                             <div className="animate-bounce-in">
@@ -2122,16 +1934,18 @@
 
         const MainApp = ({ currentUser, onLogout }) => {
             const [view, setView] = useState('grid');
-            const [previousView, setPreviousView] = useState('grid'); // ①管理画面から戻る先を記憶する
+            const [previousView, setPreviousView] = useState('grid');
             const [activeTab, setActiveTab] = useState('home'); 
             const [selectedKanji, setSelectedKanji] = useState(null);
             const [bestShots, setBestShots] = useState({});
-            const [settings, setSettings] = useState({ targetCount: 5, traceColor: 'sky', blankColor: 'green', testColor: 'purple', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [], soundEnabled: true, traceTarget: 2, blankTarget: 2, testTarget: 1 });
+            
+            // 4段階設定のデフォルト値
+            const [settings, setSettings] = useState({ targetCount: 5, traceColor: 'sky', blankColor: 'green', testColor: 'purple', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [], soundEnabled: true, traceAllTarget: 1, tenTarget: 1, blankTarget: 1, testTarget: 1 });
             
             const [newWordAlert, setNewWordAlert] = useState(null);
             const [wordRegisterTarget, setWordRegisterTarget] = useState(null);
-            const [starCelebration, setStarCelebration] = useState(null); // { milestone, isFinal }
-            const prevTotalRef = useRef(null); // 前回のひらがな収集数を記憶
+            const [starCelebration, setStarCelebration] = useState(null);
+            const prevTotalRef = useRef(null); 
             const [readWords, setReadWords] = useState([]);
             const [searchQuery, setSearchQuery] = useState('');
             const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -2140,7 +1954,6 @@
             const [isScrolling, setIsScrolling] = useState(false);
 
             const addHallOfFame = (char) => {
-                // 絵文字かどうか判定（ひらがな・漢字以外は絵文字とみなす）
                 const isEmoji = !/[\u3040-\u309F\u4e00-\u9faf]/.test(char);
                 if (!isEmoji && !bestShots[char]) {
                     alert("まだ れんしゅうしていない もじは かざれないよ！\nさきに れんしゅうしてね 🎉");
@@ -2161,7 +1974,6 @@
                 saveSettingsWrapper({ ...settings, hallOfFame: current.filter((_, i) => i !== indexToRemove) });
             };
 
-            // ① 濁音エリア用 20枠ギャラリー
             const addHallOfFame2 = (char) => {
                 if (!bestShots[char]) {
                     alert("まだ れんしゅうしていない もじは かざれないよ！\nさきに れんしゅうしてね 🎉");
@@ -2214,16 +2026,11 @@
 
             useEffect(() => {
                 const load = async () => {
-                    // ③ profileIdが設定されていればそれをSupabaseのキーに使う
-                    const supabaseId = currentUser.profileId || String(currentUser.id);
-
                     const savedSettings = await db.settings.get(currentUser.id);
                     if (savedSettings) setSettings(prev => ({ ...prev, ...savedSettings }));
 
                     const shots = await db.bestShots.where('userId').equals(currentUser.id).toArray();
-
                     if (shots.length > 0) {
-                        // ▼ Dexieにデータあり → Supabaseスキップ
                         const map = {};
                         shots.forEach(s => map[s.char] = s);
                         setBestShots(map);
@@ -2231,85 +2038,15 @@
 
                         const reads = await db.readWords.where('userId').equals(currentUser.id).toArray();
                         setReadWords(reads.map(r => r.wordId));
-
-                        // 未送信データをバックグラウンドで送信
-                        syncPendingData(currentUser.id, supabaseId);
-                    } else if (navigator.onLine) {
-                        // ▼ Dexieが空 + オンライン → Supabaseから復元
-                        try {
-                            await supabaseClient.from('profiles').upsert({
-                                id: supabaseId,
-                                auth_user_id: (await supabaseClient.auth.getUser()).data.user?.id,
-                                app_type: 'hiragana',
-                                name: currentUser.name,
-                                icon: currentUser.icon,
-                                color_label: currentUser.color?.label || 'Blue'
-                            });
-                        } catch(e) { console.error("名簿の同期エラー:", e); }
-
-                        try {
-                            const { data: remoteShots } = await supabaseClient
-                                .from('best_shots').select('*')
-                                .eq('user_id', supabaseId).eq('app_type', 'hiragana');
-                            if (remoteShots && remoteShots.length > 0) {
-                                const map = {};
-                                for (const remote of remoteShots) {
-                                    const local = { userId: currentUser.id, char: remote.char, strokes: remote.strokes_data, type: remote.type, timestamp: remote.timestamp, synced: true };
-                                    await db.bestShots.put(local);
-                                    map[remote.char] = local;
-                                }
-                                setBestShots(map);
-                                prevTotalRef.current = Object.keys(map).length;
-                            }
-                        } catch(e) { console.error("Supabase復元エラー:", e); }
-
-                        try {
-                            const { data: remoteWords } = await supabaseClient
-                                .from('read_words').select('*')
-                                .eq('user_id', supabaseId).eq('app_type', 'hiragana');
-                            if (remoteWords && remoteWords.length > 0) {
-                                for (const rw of remoteWords) {
-                                    await db.readWords.put({ userId: currentUser.id, wordId: rw.word_id, synced: true });
-                                }
-                                setReadWords(remoteWords.map(w => w.word_id));
-                            }
-                        } catch(e) { console.error("read_words復元エラー:", e); }
-
-                        try {
-                            const { data: prof } = await supabaseClient
-                                .from('profiles').select('hall_of_fame')
-                                .eq('id', supabaseId).eq('app_type', 'hiragana').single();
-                            if (prof?.hall_of_fame?.length > 0) {
-                                const localSt = await db.settings.get(currentUser.id) || {};
-                                if (!localSt.hallOfFame || localSt.hallOfFame.length === 0) {
-                                    await db.settings.put({ userId: currentUser.id, ...localSt, hallOfFame: prof.hall_of_fame });
-                                }
-                            }
-                        } catch(e) { console.error("hall_of_fame復元エラー:", e); }
                     }
                 };
                 load();
-
-                // オンライン復帰時に未送信データを自動送信
-                const handleOnline = () => syncPendingData(currentUser.id, currentUser.profileId || String(currentUser.id));
-                window.addEventListener('online', handleOnline);
-                return () => window.removeEventListener('online', handleOnline);
             }, [currentUser]);
 
             const saveSettingsWrapper = useCallback(async (newSettings) => {
                 setSettings(newSettings);
                 await db.settings.put({ userId: currentUser.id, ...newSettings });
-                // hallOfFameが変わったらSupabaseのprofilesにも反映
-                if (newSettings.hallOfFame !== undefined) {
-                    try {
-                        const supabaseId = currentUser.profileId || String(currentUser.id);
-                        await supabaseClient.from('profiles')
-                            .update({ hall_of_fame: newSettings.hallOfFame })
-                            .eq('id', supabaseId)
-                            .eq('app_type', 'hiragana');
-                    } catch(e) { console.error("hall_of_fame保存エラー:", e); }
-                }
-            }, [currentUser.id, currentUser.profileId]);
+            }, [currentUser.id]);
 
             const getUnlockedWords = (shotsMap) => {
                 if(typeof WORD_DATA === 'undefined') return [];
@@ -2321,58 +2058,23 @@
 
             const saveBestShot = async (char, practiceObj) => {
                 const nextShots = { ...bestShots, [char] : practiceObj };
-                const supabaseId = currentUser.profileId || String(currentUser.id);
-
-                // まずDexieに保存（synced:false = 未送信フラグ）
-                await db.bestShots.put({ userId: currentUser.id, char: char, ...practiceObj, synced: false });
+                await db.bestShots.put({ userId: currentUser.id, char: char, ...practiceObj });
                 setBestShots(nextShots);
-
-                // オンラインならSupabaseにも送る
-                if (navigator.onLine) {
-                    try {
-                        await supabaseClient.from('best_shots').upsert({
-                            user_id: supabaseId,
-                            app_type: 'hiragana',
-                            char: char,
-                            strokes_data: practiceObj.strokes,
-                            type: practiceObj.type,
-                            timestamp: practiceObj.timestamp
-                        });
-                        await db.bestShots.put({ userId: currentUser.id, char: char, ...practiceObj, synced: true });
-                    } catch (err) {
-                        console.warn("[Sync] bestShots保存エラー（オフライン扱い）:", err);
-                    }
-                }
                 await db.practices.where({ userId: currentUser.id, char: char }).delete();
             };
 
             const handleWordRegistered = async (wordId) => {
-                const supabaseId = currentUser.profileId || String(currentUser.id);
-                // まずDexieに保存（synced:false = 未送信フラグ）
-                await db.readWords.put({ userId: currentUser.id, wordId: wordId, synced: false });
+                await db.readWords.put({ userId: currentUser.id, wordId: wordId });
                 setReadWords(prev => [...prev, wordId]);
                 setWordRegisterTarget(null);
-                // オンラインならSupabaseにも送る
-                if (navigator.onLine) {
-                    try {
-                        await supabaseClient.from('read_words').upsert({
-                            user_id: supabaseId,
-                            word_id: wordId,
-                            app_type: 'hiragana'
-                        });
-                        await db.readWords.put({ userId: currentUser.id, wordId: wordId, synced: true });
-                    } catch(e) { console.warn("[Sync] read_words保存エラー:", e); }
-                }
             };
 
             const handleSaveComplete = (char, practiceType) => {
-                // wordsタブから練習してきた場合はhiraganaタブに切り替えてからパーティクル
                 if (activeTab === 'words') {
                     setActiveTab('hiragana');
                 }
                 setView('grid');
 
-                // ★ 節目チェック ─────────────────────────────────────────
                 const newTotal = Object.keys(bestShots).length + (bestShots[char] ? 0 : 1);
                 if (prevTotalRef.current === null) prevTotalRef.current = newTotal - 1;
                 const prevTotal = prevTotalRef.current;
@@ -2383,7 +2085,7 @@
                 if (hitMilestone) {
                     if (navigator.vibrate) navigator.vibrate([60, 50, 80, 50, 120, 50, 200]);
                     const updatedShots = { ...bestShots, [char]: { ...(bestShots[char] || {}), type: practiceType } };
-                    const traceCount = Object.values(updatedShots).filter(s => s.type === 'trace').length;
+                    const traceCount = Object.values(updatedShots).filter(s => s.type === 'traceAll' || s.type === 'trace').length;
                     const blankCount = Object.values(updatedShots).filter(s => s.type === 'blank').length;
                     const testCount  = Object.values(updatedShots).filter(s => s.type === 'test').length;
                     const traceHex = COLOR_OPTIONS.find(c => c.id === (settings.traceColor || 'sky'))?.hex  || '#38bdf8';
@@ -2398,10 +2100,7 @@
                         setStarCelebration({ milestone: hitMilestone, isFinal: hitMilestone === 75, starColorPalette });
                     }, 700);
                 }
-                // ────────────────────────────────────────────────────────
 
-                // ③ charが追加されて新たにアンロックされることばを検出して通知する
-                // 節目演出が出る場合は少し遅らせて重ならないようにする
                 const wordAlertDelay = hitMilestone ? 4800 : 300;
                 setTimeout(() => {
                     setBestShots(currentShots => {
@@ -2421,7 +2120,6 @@
                 }, wordAlertDelay);
                 
                 setTimeout(() => {
-                    // wordsタブから来た場合も kanji-item-${char} を探してスクロール＋パーティクル
                     let targetId = `kanji-item-${char}`;
                     if (activeTab === 'home') {
                         targetId = `col-new-${char}`;
@@ -2459,7 +2157,7 @@
                             if (settings.soundEnabled !== false) playSharan();
                         }, duration);
                     }
-                }, 150); // タブ切り替えのレンダリングを少し待つ
+                }, 150); 
             };
 
             const handleWordClick = async (wordObj, e) => {
@@ -2485,13 +2183,12 @@
             const totalCollected = Object.keys(bestShots).length;
             const durationMs = (settings.newDuration || 7) * 24 * 60 * 60 * 1000;
 
-            // ★ 75個全部集めたあと、何度でも星シャワーを再生する関数
             const replayStarCelebration = () => {
                 if (totalCollected < KANA_DATA.length) return;
                 const traceHex = COLOR_OPTIONS.find(c => c.id === (settings.traceColor || 'sky'))?.hex  || '#38bdf8';
                 const blankHex = COLOR_OPTIONS.find(c => c.id === (settings.blankColor || 'green'))?.hex || '#4ade80';
                 const testHex  = COLOR_OPTIONS.find(c => c.id === (settings.testColor  || 'purple'))?.hex || '#c084fc';
-                const traceCount = Object.values(bestShots).filter(s => s.type === 'trace').length;
+                const traceCount = Object.values(bestShots).filter(s => s.type === 'traceAll' || s.type === 'trace').length;
                 const blankCount = Object.values(bestShots).filter(s => s.type === 'blank').length;
                 const testCount  = Object.values(bestShots).filter(s => s.type === 'test').length;
                 setStarCelebration({
@@ -2539,7 +2236,7 @@
             }, [sortedWords, searchQuery]);
 
             const newKanjis = useMemo(() => {
-                const currentTime = Date.now(); // ← 毎回その瞬間の時刻を使い、管理画面NEWと完全同期
+                const currentTime = Date.now(); 
                 const news = [];
                 if (typeof KANA_DATA !== 'undefined') {
                     KANA_DATA.forEach(kanji => {
@@ -2554,11 +2251,10 @@
                 return news;
             }, [bestShots, durationMs]);
 
-            // ② ひらがな一覧の枠色を3モード対応で返すヘルパー関数
             const getKanaThemeColor = (shotType) => {
-                if (shotType === 'trace') return COLOR_OPTIONS.find(c => c.id === settings.traceColor)?.class || COLOR_OPTIONS[0].class;
+                if (shotType === 'traceAll' || shotType === 'trace') return COLOR_OPTIONS.find(c => c.id === settings.traceColor)?.class || COLOR_OPTIONS[0].class;
+                if (shotType === 'ten' || shotType === 'hint') return 'border-amber-400 ring-amber-200';
                 if (shotType === 'blank') return COLOR_OPTIONS.find(c => c.id === settings.blankColor)?.class || COLOR_OPTIONS[1].class;
-                // test
                 return COLOR_OPTIONS.find(c => c.id === settings.testColor)?.class || COLOR_OPTIONS[3].class;
             };
 
@@ -2578,7 +2274,6 @@
                                         const kanjiData = typeof KANA_DATA !== 'undefined' ? KANA_DATA.find(k => k.char === char) : null;
                                         
                                         if (!kanjiData) {
-                                            // 絵文字かどうか判定（ひらがな・漢字以外）
                                             const isEmoji = !/[\u3040-\u309F\u4e00-\u9faf]/.test(char);
                                             if (isEmoji) {
                                                 const isSelectedEmoji = selected.includes(char);
@@ -2610,11 +2305,13 @@
                                         
                                         if (shot) {
                                             const themeColor = getKanaThemeColor(shot.type);
-                                            colorClass = `${themeColor} bg-white border-2 shadow-sm`;
+                                            // tenモードの場合は強制的にamberの背景クラスを付与するなど微調整
+                                            const bgClass = (shot.type === 'ten' || shot.type === 'hint') ? 'bg-amber-50' : 'bg-white';
+                                            colorClass = `${themeColor} ${bgClass} border-2 shadow-sm`;
                                             if (isSelected) colorClass += " ring-2 ring-amber-400 ring-offset-1";
                                             
                                             displayContent = (
-                                                <div className="w-full h-full overflow-hidden rounded p-0.5 pointer-events-none">
+                                                <div className="w-full h-full overflow-hidden rounded p-0.5 pointer-events-none relative">
                                                     <SvgStroke strokes={shot.strokes} strokeWidth={8} color="#4B5563" />
                                                 </div>
                                             );
@@ -2653,7 +2350,6 @@
             return (
                 <div className="p-4 max-w-4xl mx-auto min-h-screen relative pt-20 animate-fade-in">
                     
-                    {/* ★ 節目ごとの星シャワー演出 */}
                     {starCelebration && (
                         <StarShowerOverlay
                             milestone={starCelebration.milestone}
@@ -2674,7 +2370,6 @@
                     
                     <div className="absolute top-4 left-0 w-full px-4 flex justify-between items-center gap-3 z-40">
                         <div className="flex gap-2 shrink-0">
-                            {/* ③ ひらがな・ことばずかんタブでも「ホーム」を常に表示 */}
                             <button 
                                 onClick={() => {
                                     setActiveTab('home');
@@ -2755,7 +2450,6 @@
                                 <div className="flex gap-3 w-full">
                                     <button
                                         onClick={() => {
-                                            // 先頭のことばのパズルモーダルを直接開く
                                             const target = newWordAlert[0];
                                             setNewWordAlert(null);
                                             setWordRegisterTarget({ ...target, pendingShots: bestShots });
@@ -2885,7 +2579,6 @@
                                                     boxShadow: `4px 4px 0px ${theme.border}`
                                                 }}
                                             >
-                                                {/* 上の飾り帯 */}
                                                 <div
                                                     className="absolute top-0 left-0 right-0 flex items-center justify-between px-1.5 py-0.5 rounded-t-[10px]"
                                                     style={{ background: theme.border, height: '20px' }}
@@ -2894,12 +2587,13 @@
                                                     <span className="text-white text-[8px] font-bold opacity-80">{index + 1}</span>
                                                     <span className="text-white text-[9px] font-black">{theme.deco[1]}</span>
                                                 </div>
-                                                {/* コンテンツ */}
                                                 <div className="w-full h-full flex items-center justify-center" style={{ paddingTop: '20px', paddingBottom: '4px', paddingLeft: '4px', paddingRight: '4px' }}>
                                                     {hasContent ? (
                                                         isEmoji
                                                             ? <span className="text-5xl md:text-6xl leading-none">{char}</span>
-                                                            : <div className="w-full h-full"><SvgStroke strokes={shot.strokes} strokeWidth={12} color="#1F2937" /></div>
+                                                            : <div className="w-full h-full relative">
+                                                                <SvgStroke strokes={shot.strokes} strokeWidth={12} color="#1F2937" />
+                                                              </div>
                                                     ) : (
                                                         <div className="flex flex-col items-center gap-1 select-none opacity-30">
                                                             <span className="text-2xl">{theme.label}</span>
@@ -2927,7 +2621,6 @@
                                 <div className="rounded-3xl border-4 border-amber-400 shadow-xl relative overflow-visible mt-4 max-w-4xl mx-auto w-full"
                                     style={{ background: 'linear-gradient(135deg, #fef3c7, #ffedd5, #fef9ee)', boxShadow: '0 4px 24px rgba(251,191,36,0.3), 0 0 0 2px #fde68a' }}
                                 >
-                                    {/* キラキラ装飾バナー */}
                                     <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-white text-sm font-black px-6 py-2 rounded-full shadow-lg z-10 flex items-center gap-2"
                                         style={{ background: 'linear-gradient(90deg, #f59e0b, #f97316, #ef4444)', letterSpacing: '0.05em' }}
                                     >
@@ -2937,7 +2630,6 @@
                                     </div>
 
                                     <div className="pt-7 pb-4 px-4">
-                                        {/* 期間表示 */}
                                         <div className="text-center mb-3">
                                             <span className="text-[10px] font-bold text-amber-500 bg-amber-100 px-3 py-1 rounded-full border border-amber-200">
                                                 📅 さいきん {settings.newDuration || 7}にち かけたもじ
@@ -2945,14 +2637,14 @@
                                         </div>
                                         <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2 md:gap-2.5">
                                             {newKanjis.map(item => {
-                                                // ② NEWセクションも3モード対応
                                                 const themeColor = getKanaThemeColor(item.shot.type);
+                                                const bgClass = (item.shot.type === 'ten' || item.shot.type === 'hint') ? 'bg-amber-50' : 'bg-white';
                                                 return (
                                                     <div key={`col-new-${item.char}`} id={`col-new-${item.char}`} onClick={() => { setSelectedKanji(item); setView('practice'); }}
-                                                        className={`relative aspect-square rounded-xl cursor-pointer hover:scale-115 hover:-translate-y-1 shadow-md flex items-center justify-center transition-all border-2 bg-white ${themeColor}`}
+                                                        className={`relative aspect-square rounded-xl cursor-pointer hover:scale-115 hover:-translate-y-1 shadow-md flex items-center justify-center transition-all border-2 ${bgClass} ${themeColor}`}
                                                         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.10)' }}
                                                     >
-                                                        <div className="w-full h-full overflow-hidden rounded-lg p-0.5 pointer-events-none">
+                                                        <div className="w-full h-full overflow-hidden rounded-lg p-0.5 pointer-events-none relative">
                                                             <SvgStroke strokes={item.shot.strokes} strokeWidth={8} color="#1F2937" />
                                                         </div>
                                                     </div>
@@ -3005,7 +2697,9 @@
                                                     <>
                                                         {isEmoji
                                                             ? <span className="text-3xl md:text-4xl">{char}</span>
-                                                            : <img src={shot.image} className="w-full h-full object-contain p-1 rounded-lg" />
+                                                            : <div className="w-full h-full relative p-1">
+                                                                <SvgStroke strokes={shot.strokes} strokeWidth={12} color="#1F2937" />
+                                                              </div>
                                                         }
                                                         <button onClick={() => removeHallOfFame(index)}
                                                             className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 shadow-md hover:scale-110 active:scale-95 z-40 border-2"
@@ -3107,7 +2801,7 @@
                                                             return (
                                                                 <div key={i}
                                                                     onClick={(e) => { e.stopPropagation(); speakWithSettings(char, settings, { rate: 0.8, pitch: 1.2 }); }}
-                                                                    className="w-7 h-7 rounded-lg border-2 border-amber-200 bg-amber-50 overflow-hidden shrink-0 cursor-pointer hover:border-amber-400 hover:scale-110 transition-transform active:scale-95">
+                                                                    className="w-7 h-7 rounded-lg border-2 border-amber-200 bg-amber-50 overflow-hidden shrink-0 cursor-pointer hover:border-amber-400 hover:scale-110 transition-transform active:scale-95 relative">
                                                                     <SvgStroke strokes={bestShots[char].strokes} strokeWidth={8} color="#92400e"/>
                                                                 </div>
                                                             );
@@ -3119,9 +2813,7 @@
                                     );
                                 } else {
                                     const charsNeeded = wordObj.word.split('').filter(c => isTargetChar(c) && !bestShots[c]);
-                                    const totalChars = wordObj.word.split('').filter(c => isTargetChar(c)).length;
-                                    const doneChars = totalChars - charsNeeded.length;
-
+                                    
                                     return (
                                         <div key={wordObj.id}
                                             className="relative bg-stone-50 rounded-2xl text-center overflow-hidden border-2 border-dashed border-stone-200"
@@ -3145,7 +2837,7 @@
                                                             <div key={i} className="w-7 h-7 rounded-lg border border-transparent flex items-center justify-center text-stone-300 text-xs font-kyokasho shrink-0">{char}</div>
                                                         );
                                                         return bestShots[char] ? (
-                                                            <div key={i} className="w-7 h-7 rounded-lg border-2 border-amber-200 bg-amber-50 overflow-hidden shrink-0 pointer-events-none">
+                                                            <div key={i} className="w-7 h-7 rounded-lg border-2 border-amber-200 bg-amber-50 overflow-hidden shrink-0 pointer-events-none relative">
                                                                 <SvgStroke strokes={bestShots[char].strokes} strokeWidth={8} color="#92400e"/>
                                                             </div>
                                                         ) : (
@@ -3167,7 +2859,6 @@
             );
         }
 
-        // ▼ ログイン画面
         const LoginScreen = ({ onLogin }) => {
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState(null);
@@ -3217,49 +2908,21 @@
             );
         };
 
+        // =====================================================
+        // ▼ App ― 完全ローカルでのプロフィール選択・切り替え
+        // =====================================================
         function App() {
-            const [session, setSession] = useState(null);
-            const [authLoading, setAuthLoading] = useState(true);
             const [currentUser, setCurrentUser] = useState(null);
 
-            useEffect(() => {
-                // 現在のセッションを取得
-                supabaseClient.auth.getSession().then(({ data: { session } }) => {
-                    setSession(session);
-                    setAuthLoading(false);
-                });
-                // セッションの変化を監視
-                const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-                    setSession(session);
-                    setAuthLoading(false);
-                    // ログアウト時はプロフィールもリセット
-                    if (!session) setCurrentUser(null);
-                });
-                return () => subscription.unsubscribe();
-            }, []);
-
-            if (authLoading) return (
-                <div className="min-h-screen flex items-center justify-center bg-[#fdfbf7]">
-                    <div className="text-4xl animate-bounce">📖</div>
-                </div>
-            );
-            if (!session) return <LoginScreen />;
-            if (!currentUser) return <ProfileSelect onSelect={setCurrentUser} authUserId={session.user.id} />;
+            // ユーザーが選ばれていない時は、ローカルのプロフィール選択画面を表示
+            if (!currentUser) return <ProfileSelect onSelect={setCurrentUser} />;
+            
+            // ログアウトボタンで currentUser を null に戻し、選択画面へ遷移させる
             return <MainApp currentUser={currentUser} onLogout={() => setCurrentUser(null)} />;
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-    </script>
-    <script>
-        // サービスワーカーを登録してPWA（オフライン対応）を有効化
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then((reg) => console.log('[PWA] サービスワーカー登録成功:', reg.scope))
-                    .catch((err) => console.warn('[PWA] サービスワーカー登録失敗:', err));
-            });
-        }
     </script>
 </body>
 </html>
