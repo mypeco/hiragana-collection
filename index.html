@@ -210,6 +210,7 @@
 
         const speakWithSettings = (text, settings, opts = {}) => {
             if (!window.speechSynthesis) return;
+            if (settings.voiceEnabled === false) return;
             window.speechSynthesis.cancel();
             const utter = new SpeechSynthesisUtterance(text);
             utter.lang = 'ja-JP';
@@ -257,6 +258,7 @@
         const GridIcon = (p) => <Icon {...p}><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></Icon>;
         const X = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>;
         const ChevronDown = (p) => <Icon {...p}><path d="m6 9 6 6 6-6"/></Icon>;
+        const Undo = (p) => <Icon {...p}><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></Icon>;
         const ChevronUp = (p) => <Icon {...p}><path d="m18 15-6-6-6 6"/></Icon>;
         const EditIcon = (p) => <Icon {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Icon>;
 
@@ -632,7 +634,6 @@
                                                 className={`flex flex-col items-center gap-2 px-3 py-3 rounded-xl border-2 flex-1 transition-all ${isActive ? 'border-orange-500 bg-orange-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600 hover:border-orange-300'}`}
                                             >
                                                 <div className="flex items-end gap-1.5 h-10 justify-center">
-                                                    <div className="rounded border-2 border-current opacity-60" style={{width:`${opt.refW}px`, height:`${opt.refW}px`}}></div>
                                                     <div className="rounded border-2 border-current" style={{width:`${opt.canvasW}px`, height:`${opt.canvasW}px`}}></div>
                                                 </div>
                                                 <span className="text-xs font-bold">{opt.label}</span>
@@ -679,13 +680,13 @@
                                 <p className="text-xs text-purple-600 mb-3">どの書き方で仕上げた時に、一覧（コレクション）へ追加するかを決めます。</p>
                                 <div className="flex flex-col gap-2">
                                     <button onClick={() => saveSettings({...settings, completionLevel: 1})} className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${settings.completionLevel === 1 || !settings.completionLevel ? 'border-purple-500 bg-purple-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>
-                                        レベル1： なぞり・てん・おてほん・みないで（どれでもOK）
+                                        1： なぞり・てん・おてほん・みないで（どれでもOK）
                                     </button>
                                     <button onClick={() => saveSettings({...settings, completionLevel: 2})} className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${settings.completionLevel === 2 ? 'border-purple-500 bg-purple-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>
-                                        レベル2： おてほん・みないで（自力で書けたらOK）
+                                        2： おてほん・みないで（自力で書けたらOK）
                                     </button>
                                     <button onClick={() => saveSettings({...settings, completionLevel: 3})} className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${settings.completionLevel === 3 ? 'border-purple-500 bg-purple-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>
-                                        レベル3： みないで（見本なしで書けたらOK）
+                                        3： みないで（見本なしで書けたらOK）
                                     </button>
                                 </div>
                             </div>
@@ -733,24 +734,38 @@
                                 </div>
                             </div>
 
-                            <div className="bg-sky-50 p-4 rounded-xl border border-sky-200 shadow-sm">
-                                <h3 className="font-bold text-lg mb-2 text-sky-800 flex items-center gap-2">📱 べつの端末でつかうとき</h3>
-                                <div className="space-y-3 text-sm text-sky-700">
-                                    <div className="flex gap-2 items-start">
-                                        <span className="shrink-0 font-bold bg-sky-400 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">1</span>
-                                        <p>この端末の「だれがあそぶ？」画面で ✏️ ボタンを押して、<strong>🔑 IDをコピー</strong>してね</p>
-                                    </div>
-                                    <div className="flex gap-2 items-start">
-                                        <span className="shrink-0 font-bold bg-sky-400 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">2</span>
-                                        <p>べつの端末でアプリをひらいて、<strong>「あたらしく つくる」</strong>でプロフィールを作るよ</p>
-                                    </div>
-                                    <div className="flex gap-2 items-start">
-                                        <span className="shrink-0 font-bold bg-sky-400 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">3</span>
-                                        <p>なまえやアイコンを入れて、いちばん下の<strong>「IDをもっているひとはここに入れてね」</strong>にコピーしたIDをはり付けて「ほぞんする」！</p>
-                                    </div>
-                                    <div className="p-3 bg-white rounded-lg border border-sky-200 text-xs text-stone-500 leading-relaxed">
-                                        ✅ おなじIDでログインすると、クラウドに保存された練習データが自動で読み込まれるよ。<br/>
-                                        ⚠️ べつの端末にすでにデータがある場合、新しいほうで上書きされることがあるよ。
+                            <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 shadow-sm">
+                                <h3 className="font-bold text-lg mb-3 text-stone-700 flex items-center gap-2">📄 このアプリについて</h3>
+                                <div className="space-y-2 text-xs text-stone-500 leading-relaxed">
+                                    <p className="font-bold text-stone-600 text-sm">使用しているフォント・ライブラリ</p>
+                                    <div className="space-y-1.5">
+                                        <div className="bg-white rounded-lg border border-stone-200 px-3 py-2">
+                                            <span className="font-bold text-stone-600">Klee One / Yuji Boku</span>
+                                            <span className="ml-2 text-stone-400">（Google Fonts）</span>
+                                            <p className="text-stone-400 mt-0.5">SIL Open Font License 1.1</p>
+                                        </div>
+                                        <div className="bg-white rounded-lg border border-stone-200 px-3 py-2">
+                                            <span className="font-bold text-stone-600">KanjiVG</span>
+                                            <span className="ml-2 text-stone-400">© Ulrich Apel</span>
+                                            <p className="text-stone-400 mt-0.5">Creative Commons Attribution-ShareAlike 3.0</p>
+                                        </div>
+                                        <div className="bg-white rounded-lg border border-stone-200 px-3 py-2">
+                                            <span className="font-bold text-stone-600">React 18</span>
+                                            <span className="ml-2 text-stone-400">© Meta Platforms, Inc.</span>
+                                            <p className="text-stone-400 mt-0.5">MIT License</p>
+                                        </div>
+                                        <div className="bg-white rounded-lg border border-stone-200 px-3 py-2">
+                                            <span className="font-bold text-stone-600">Tailwind CSS</span>
+                                            <p className="text-stone-400 mt-0.5">MIT License</p>
+                                        </div>
+                                        <div className="bg-white rounded-lg border border-stone-200 px-3 py-2">
+                                            <span className="font-bold text-stone-600">Dexie.js</span>
+                                            <p className="text-stone-400 mt-0.5">Apache License 2.0</p>
+                                        </div>
+                                        <div className="bg-white rounded-lg border border-stone-200 px-3 py-2">
+                                            <span className="font-bold text-stone-600">Babel Standalone</span>
+                                            <p className="text-stone-400 mt-0.5">MIT License</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -760,7 +775,7 @@
             );
         };
 
-        const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onSaveBest, onSaveComplete, onOpenAdmin, onToggleSound }) => {
+        const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onSaveBest, onSaveComplete, onOpenAdmin, onToggleSound, onToggleVoice }) => {
             const [isGuideWatched, setIsGuideWatched] = useState(false);
             const hand = settings.hand || 'right'; 
             const isKogaki = ['ゃ','ゅ','ょ','っ'].includes(targetKanji.char);
@@ -940,6 +955,28 @@
                 currentStrokeRef.current = [];
             };
 
+            const undo = () => {
+                if (allStrokesRef.current.length === 0) return;
+                // 最後の1ストロークを取り除く
+                allStrokesRef.current = allStrokesRef.current.slice(0, -1);
+                // キャンバスをクリアして残りのストロークを描き直す
+                const canvas = canvasRef.current;
+                const ctx = contextRef.current;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                allStrokesRef.current.forEach(stroke => {
+                    if (stroke.length === 0) return;
+                    ctx.beginPath();
+                    // normX/normY（0〜200の正規化座標）→ 実際のピクセル座標に変換
+                    ctx.moveTo(stroke[0].x / 200 * rect.width, stroke[0].y / 200 * rect.height);
+                    stroke.forEach(pt => ctx.lineTo(pt.x / 200 * rect.width, pt.y / 200 * rect.height));
+                    ctx.stroke();
+                    ctx.closePath();
+                });
+                if (allStrokesRef.current.length === 0) setHasDrawn(false);
+            };
+
             useEffect(() => {
                 let isMounted = true;
                 setIsLoadingPaths(true);
@@ -1117,16 +1154,7 @@
                         <div className="w-full flex justify-between items-start mb-2 px-3 gap-2">
                             <div className="flex flex-col gap-2 shrink-0">
                                 <button onClick={onBack} className="text-stone-500 flex items-center gap-1 text-sm bg-white px-3 py-1.5 rounded-full mt-1 hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all"><span className="text-base leading-none">↩️</span> もどる</button>
-                                <div className="flex gap-2">
-                                    <a href="admin.html" onClick={(e) => { e.preventDefault(); onOpenAdmin(); }} className="text-stone-500 flex items-center justify-center text-xl bg-white w-10 h-10 rounded-full hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all leading-none">⚙️</a>
-                                    <button
-                                        onClick={() => onToggleSound()}
-                                        title={settings.soundEnabled !== false ? "おとをけす" : "おとをならす"}
-                                        className="text-stone-500 flex items-center justify-center text-xl bg-white w-10 h-10 rounded-full hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all leading-none"
-                                    >
-                                        {settings.soundEnabled !== false ? '🔔' : '🔕'}
-                                    </button>
-                                </div>
+                                <a href="admin.html" onClick={(e) => { e.preventDefault(); onOpenAdmin(); }} className="text-stone-500 flex items-center justify-center text-xl bg-white w-10 h-10 rounded-full hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all leading-none">⚙️</a>
                             </div>
                             
                             <div className="flex-1 flex justify-center">
@@ -1159,7 +1187,22 @@
                                     
                                 </div>
                             </div>
-                            <div className="w-20 shrink-0"></div> 
+                            <div className="flex flex-col gap-2 shrink-0 items-center mt-1">
+                                <button
+                                    onClick={() => onToggleSound()}
+                                    title={settings.soundEnabled !== false ? "こうかおんをけす" : "こうかおんをならす"}
+                                    className="flex items-center justify-center text-xl bg-white w-10 h-10 rounded-full hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all leading-none"
+                                >
+                                    {settings.soundEnabled !== false ? '🔔' : '🔕'}
+                                </button>
+                                <button
+                                    onClick={() => onToggleVoice && onToggleVoice()}
+                                    title={settings.voiceEnabled !== false ? "おしゃべりをけす" : "おしゃべりをならす"}
+                                    className="flex items-center justify-center text-xl bg-white w-10 h-10 rounded-full hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all leading-none"
+                                >
+                                    {settings.voiceEnabled !== false ? '🔊' : '🔇'}
+                                </button>
+                            </div>
                         </div>
 
                         <div ref={practicesStripRef} className={`w-[95%] h-36 md:h-44 rounded-2xl p-3 md:p-4 flex gap-3 overflow-x-auto relative items-center transition-all duration-500 ${isGoalReached ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-4 border-amber-400 shadow-lg' : 'bg-white border-4 border-amber-200 shadow-sm'}`}
@@ -1289,63 +1332,63 @@
                              */}
                             <div className={`${refSizeClass} shrink-0 self-center flex flex-col gap-1.5`}>
 
-                                {/* ダミー: 再生ボタンと同じ高さ(h-9)で透明 → ボックスを上下対称に保つ */}
-                                <div className="h-9 w-full" aria-hidden="true" />
+    {/* ダミー: 再生ボタンと同じ高さ(h-9)で透明 → ボックスを上下対称に保つ */}
+    <div className="h-9 w-full" aria-hidden="true" />
 
-                                {/* 見本ボックス */}
-                                <div className="relative w-full aspect-square">
-                                    {isTestMode && (
-                                        <div className="absolute inset-0 z-30 bg-gray-100 rounded-xl flex flex-col items-center justify-center border-4 border-gray-200 shadow-inner">
-                                            <span className="text-4xl mb-2 grayscale opacity-50">🙈</span>
-                                            <span className="text-gray-400 font-bold text-xs md:text-sm text-center">みないで<br/>かけるかな？</span>
-                                        </div>
-                                    )}
-                                    {isLoadingPaths ? (
-                                        <div className="w-full h-full bg-white rounded-xl shadow-md border-4 border-orange-200 flex flex-col items-center justify-center text-sky-400">
-                                            <Loader className="w-8 h-8 mb-2" />
-                                        </div>
-                                    ) : svgPaths ? (
-                                        <AnimatedKana paths={svgPaths} strokes={targetKanji.strokes} multiColor={settings.partColor} onComplete={() => setIsGuideWatched(true)} isKogaki={['ゃ','ゅ','ょ','っ'].includes(targetKanji.char)} trickyStroke={targetKanji.trickyStroke} playRef={kanaPlayRef} onStatusChange={setKanaStatus} />
-                                    ) : (
-                                        <div className="w-full h-full bg-white rounded-xl shadow-md border-4 border-orange-200 relative select-none">
-                                            <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
-                                                <div className="absolute top-1/2 w-full border-t-2 border-dashed border-red-300"></div>
-                                                <div className="absolute left-1/2 h-full border-l-2 border-dashed border-red-300"></div>
-                                            </div>
-                                            <span className="absolute top-1 left-1 text-[10px] text-red-500 bg-white px-1 rounded border border-red-200 z-20 font-bold">{targetKanji.strokes}かく</span>
-                                            <div className={`absolute font-kyokasho text-black leading-none flex items-center justify-center ${['ゃ','ゅ','ょ','っ'].includes(targetKanji.char) ? '' : 'inset-0'}`}
-                                                style={['ゃ','ゅ','ょ','っ'].includes(targetKanji.char) ? {left:'-8%', bottom:'0%', width:'66%', height:'66%', fontSize:'4.5rem'} : {fontSize:'8rem'}}>
-                                                <span>{targetKanji.char}</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+    {/* 見本ボックス */}
+    <div className="relative w-full aspect-square">
+        {isTestMode && (
+            <div className="absolute inset-0 z-30 bg-gray-100 rounded-xl flex flex-col items-center justify-center border-4 border-gray-200 shadow-inner">
+                <span className="text-4xl mb-2 grayscale opacity-50">🙈</span>
+                <span className="text-gray-400 font-bold text-xs md:text-sm text-center">みないで<br/>かけるかな？</span>
+            </div>
+        )}
+        {isLoadingPaths ? (
+            <div className="w-full h-full bg-white rounded-xl shadow-md border-4 border-orange-200 flex flex-col items-center justify-center text-sky-400">
+                <Loader className="w-8 h-8 mb-2" />
+            </div>
+        ) : svgPaths ? (
+            <AnimatedKana paths={svgPaths} strokes={targetKanji.strokes} multiColor={settings.partColor} onComplete={() => setIsGuideWatched(true)} isKogaki={['ゃ','ゅ','ょ','っ'].includes(targetKanji.char)} trickyStroke={targetKanji.trickyStroke} playRef={kanaPlayRef} onStatusChange={setKanaStatus} />
+        ) : (
+            <div className="w-full h-full bg-white rounded-xl shadow-md border-4 border-orange-200 relative select-none">
+                <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
+                    <div className="absolute top-1/2 w-full border-t-2 border-dashed border-red-300"></div>
+                    <div className="absolute left-1/2 h-full border-l-2 border-dashed border-red-300"></div>
+                </div>
+                <span className="absolute top-1 left-1 text-[10px] text-red-500 bg-white px-1 rounded border border-red-200 z-20 font-bold">{targetKanji.strokes}かく</span>
+                <div className={`absolute font-kyokasho text-black leading-none flex items-center justify-center ${['ゃ','ゅ','ょ','っ'].includes(targetKanji.char) ? '' : 'inset-0'}`}
+                    style={['ゃ','ゅ','ょ','っ'].includes(targetKanji.char) ? {left:'-8%', bottom:'0%', width:'66%', height:'66%', fontSize:'4.5rem'} : {fontSize:'8rem'}}>
+                    <span>{targetKanji.char}</span>
+                </div>
+            </div>
+        )}
+    </div>
 
-                                {/* 再生ボタン(h-9固定): ダミーと同じ高さで対称 */}
-                                <div className="relative flex items-center gap-1.5 h-9">
-                                <button
-                                    onClick={() => kanaPlayRef.current?.()}
-                                    disabled={kanaStatus === 'playing' || isLoadingPaths || !svgPaths}
-                                    className={`relative flex items-center justify-center gap-1.5 flex-1 h-full rounded-full font-bold transition-all shadow-md
-                                        ${kanaStatus === 'playing' || isLoadingPaths || !svgPaths
-                                            ? 'bg-stone-100 text-stone-400 cursor-not-allowed shadow-none'
-                                            : targetKanji.trickyStroke
-                                                ? 'bg-red-50 text-red-600 border-4 border-red-500 hover:bg-red-100 active:scale-95'
-                                                : 'bg-sky-500 text-white hover:bg-sky-600 active:scale-95'}`}
-                                >
-                                    <Play className="w-4 h-4 fill-current shrink-0" />
-                                    <span className="text-xs whitespace-nowrap">
-                                        {kanaStatus === 'playing' ? 'さいせいちゅう' : targetKanji.trickyStroke ? 'かきじゅんちゅうい！' : 'さいせい'}
-                                    </span>
-                                </button>
-                                {/* ⚠️ボタン右横に独立配置 */}
-                                {targetKanji.trickyStroke && kanaStatus !== 'playing' && svgPaths && (
-                                    <span className="text-2xl leading-none drop-shadow-md animate-bounce shrink-0">⚠️</span>
-                                )}
-                                </div>
-                            </div>
+    {/* 再生ボタン(h-9固定): ダミーと同じ高さで対称 */}
+    <div className="relative flex items-center gap-1.5 h-9">
+        {/* ⚠️ 赤ボタンの右端の線に被せる */}
+        {targetKanji.trickyStroke && kanaStatus !== 'playing' && svgPaths && (
+            <span className="absolute right-0 translate-x-1 top-1 -translate-y-1 text-2xl drop-shadow-md animate-bounce z-40">⚠️</span>
+        )}
+        <button
+            onClick={() => kanaPlayRef.current?.()}
+            disabled={kanaStatus === 'playing' || isLoadingPaths || !svgPaths}
+            className={`relative flex items-center justify-center gap-1.5 flex-1 h-full rounded-full font-bold transition-all shadow-md
+                ${kanaStatus === 'playing' || isLoadingPaths || !svgPaths
+                    ? 'bg-stone-100 text-stone-400 cursor-not-allowed shadow-none'
+                    : targetKanji.trickyStroke
+                        ? 'bg-red-50 text-red-600 border-4 border-red-500 hover:bg-red-100 active:scale-95'
+                        : 'bg-sky-500 text-white hover:bg-sky-600 active:scale-95'}`}
+        >
+            <Play className="w-4 h-4 fill-current shrink-0" />
+            <span className="text-xs whitespace-nowrap">
+                {kanaStatus === 'playing' ? 'さいせいちゅう' : targetKanji.trickyStroke ? 'かきじゅんちゅうい！' : 'さいせい'}
+            </span>
+        </button>
+    </div>
+</div>
 
-                            <div ref={canvasContainerRef} className={`relative group ${canvasSizeClass} shrink-0`}>
+                            <div ref={canvasContainerRef} className={`relative group ${canvasSizeClass} shrink-0 self-center`}>
                                 {/* モードボタンは上の独立行に移動済み。ここには何も追加しない */}
 
                                 <div className="relative w-full aspect-square bg-white rounded-2xl shadow-xl border-4 overflow-hidden cursor-crosshair transition-colors duration-300" style={{ borderColor: borderColor }}>
@@ -1393,7 +1436,13 @@
                                 </div>
                             </div>
 
-                            <div className="flex flex-col items-center justify-center gap-6 md:gap-10 shrink-0 self-center relative">
+                            <div className="flex flex-col items-center justify-center gap-3 md:gap-5 shrink-0 self-center relative">
+                                <button onClick={undo} className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-full flex items-center justify-center shadow-sm">
+                                        <Undo className="w-5 h-5 md:w-6 md:h-6" />
+                                    </div>
+                                    <span className="text-[10px] md:text-xs font-bold">とりけし</span>
+                                </button>
                                 <button onClick={clear} className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600">
                                     <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-full flex items-center justify-center shadow-sm">
                                         <Eraser className="w-5 h-5 md:w-6 md:h-6" />
@@ -2058,7 +2107,7 @@
             const [bestShots, setBestShots] = useState({});
             
             // 4段階設定のデフォルト値
-            const [settings, setSettings] = useState({ targetCount: 5, traceColor: 'sky', blankColor: 'green', testColor: 'purple', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [], soundEnabled: true, traceAllTarget: 1, tenTarget: 1, blankTarget: 1, testTarget: 1 });
+            const [settings, setSettings] = useState({ targetCount: 5, traceColor: 'sky', blankColor: 'green', testColor: 'purple', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [], soundEnabled: true, voiceEnabled: true, traceAllTarget: 1, tenTarget: 1, blankTarget: 1, testTarget: 1 });
             
             const [newWordAlert, setNewWordAlert] = useState(null);
             const [wordRegisterTarget, setWordRegisterTarget] = useState(null);
@@ -2443,7 +2492,7 @@
             };
 
             if (view === 'admin') return <AdminScreen onBack={() => setView(previousView)} settings={settings} saveSettings={saveSettingsWrapper} />;
-            if (view === 'practice') return <PracticeStudio currentUser={currentUser} targetKanji={selectedKanji} settings={settings} onBack={() => setView('grid')} onSaveBest={saveBestShot} onSaveComplete={handleSaveComplete} onOpenAdmin={() => { setPreviousView(view); setView('admin'); }} onToggleSound={() => saveSettingsWrapper({...settings, soundEnabled: settings.soundEnabled === false ? true : false})} />;
+            if (view === 'practice') return <PracticeStudio currentUser={currentUser} targetKanji={selectedKanji} settings={settings} onBack={() => setView('grid')} onSaveBest={saveBestShot} onSaveComplete={handleSaveComplete} onOpenAdmin={() => { setPreviousView(view); setView('admin'); }} onToggleSound={() => saveSettingsWrapper({...settings, soundEnabled: settings.soundEnabled === false ? true : false})} onToggleVoice={() => saveSettingsWrapper({...settings, voiceEnabled: settings.voiceEnabled === false ? true : false})} />;
 
             const unlockedWords = getUnlockedWords(bestShots);
             const unreadCount = unlockedWords.filter(w => !readWords.includes(w.id)).length;
@@ -2469,35 +2518,52 @@
                         />
                     )}
                     
-                    <div className="absolute top-4 left-0 w-full px-4 flex justify-between items-center gap-3 z-40">
+                    <div className="absolute top-4 left-0 w-full px-4 flex justify-between items-center gap-2 z-40">
+                        {/* 左：アカウント + 設定 */}
                         <div className="flex gap-2 shrink-0">
-                            <button 
-                                onClick={() => {
-                                    setActiveTab('home');
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }} 
-                                className={`flex items-center gap-1.5 text-stone-600 bg-white shadow-sm px-3 py-2 rounded-lg font-bold text-sm border-2 transition-transform hover:bg-stone-50 active:scale-95 animate-pop-in
-                                    ${activeTab === 'home' ? 'border-amber-200 bg-[#faf8f5]' : 'border-[#e8e4db]'}`}
-                            >
-                                <span className="text-base leading-none">🏠</span>
-                                <span className="hidden sm:inline">ホーム</span>
+                            <button onClick={onLogout} title="だれがあそぶ？" className={`shrink-0 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full shadow-sm border-2 ${currentUser.color.class} ${currentUser.color.border} active:scale-95 transition-transform font-bold text-xl sm:text-2xl`}>
+                                {currentUser.icon}
                             </button>
                             <button onClick={() => setView('admin')} title="せってい" className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 bg-white shadow-sm rounded-lg font-bold border-2 border-[#e8e4db] hover:bg-stone-50 active:scale-95 transition-transform">
                                 <span className="text-lg sm:text-xl leading-none">⚙️</span>
                             </button>
                         </div>
-                        
 
+                        {/* 中央：ひらがな/ことばずかん タブ */}
+                        <div className="flex justify-center flex-1 min-w-0">
+                            <div className="relative flex bg-white border-2 border-[#e8e4db] p-1 rounded-full shadow-sm overflow-hidden">
+                                <div 
+                                    className={`absolute top-1 bottom-1 w-20 sm:w-28 rounded-full transition-all duration-500 ease-[cubic-bezier(0.165,0.84,0.44,1)] shadow-sm z-0 bg-[#ece8df]
+                                        ${activeTab === 'hiragana' ? 'translate-x-0 opacity-100' : ''}
+                                        ${activeTab === 'words' ? 'translate-x-full opacity-100' : ''}
+                                        ${activeTab === 'home' ? 'opacity-0' : ''}
+                                    `}
+                                ></div>
+                                <button onClick={() => setActiveTab('hiragana')} className={`relative flex-shrink-0 flex items-center justify-center gap-1 w-20 sm:w-28 py-1.5 rounded-full font-bold text-[11px] sm:text-sm transition-colors duration-300 z-10 ${activeTab === 'hiragana' ? 'text-stone-800' : 'text-stone-400 hover:text-stone-600'}`}>
+                                    <GridIcon className="w-3.5 h-3.5 shrink-0"/> <span className="whitespace-nowrap">ひらがな</span>
+                                </button>
+                                <button onClick={() => setActiveTab('words')} className={`relative flex-shrink-0 flex items-center justify-center gap-1 w-20 sm:w-28 py-1.5 rounded-full font-bold text-[11px] sm:text-sm transition-colors duration-300 z-10 ${activeTab === 'words' ? 'text-stone-800' : 'text-stone-400 hover:text-stone-600'}`}>
+                                    <BookOpen className="w-3.5 h-3.5 shrink-0"/> <span className="whitespace-nowrap">ことばずかん</span>
+                                    {unreadCount > 0 && <span className="absolute top-0 right-0.5 bg-red-500 text-white text-[8px] w-3.5 h-3.5 flex items-center justify-center rounded-full border border-white shadow-sm">{unreadCount}</span>}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 右：効果音 + 音声 */}
                         <div className="flex items-center gap-2 shrink-0">
                             <button
                                 onClick={() => saveSettingsWrapper({...settings, soundEnabled: settings.soundEnabled === false ? true : false})}
-                                title={settings.soundEnabled !== false ? "おとをけす" : "おとをならす"}
+                                title={settings.soundEnabled !== false ? "こうかおんをけす" : "こうかおんをならす"}
                                 className="shrink-0 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full shadow-sm border-2 border-stone-200 bg-white active:scale-95 transition-transform text-xl"
                             >
                                 {settings.soundEnabled !== false ? '🔔' : '🔕'}
                             </button>
-                            <button onClick={onLogout} title="だれがあそぶ？" className={`shrink-0 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full shadow-sm border-2 ${currentUser.color.class} ${currentUser.color.border} active:scale-95 transition-transform font-bold text-xl sm:text-2xl`}>
-                                {currentUser.icon}
+                            <button
+                                onClick={() => saveSettingsWrapper({...settings, voiceEnabled: settings.voiceEnabled === false ? true : false})}
+                                title={settings.voiceEnabled !== false ? "おしゃべりをけす" : "おしゃべりをならす"}
+                                className="shrink-0 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full shadow-sm border-2 border-stone-200 bg-white active:scale-95 transition-transform text-xl"
+                            >
+                                {settings.voiceEnabled !== false ? '🔊' : '🔇'}
                             </button>
                         </div>
                     </div>
@@ -2540,25 +2606,6 @@
                         </div>
                     )}
 
-                    <div className="flex justify-center mb-8 mt-4 w-full px-2">
-                        <div className="relative flex bg-white border-2 border-[#e8e4db] p-1.5 rounded-full shadow-sm overflow-x-auto">
-                            <div 
-                                className={`absolute top-1.5 bottom-1.5 w-32 sm:w-40 rounded-full transition-all duration-500 ease-[cubic-bezier(0.165,0.84,0.44,1)] shadow-sm z-0 bg-[#ece8df]
-                                    ${activeTab === 'hiragana' ? 'translate-x-0 opacity-100' : ''}
-                                    ${activeTab === 'words' ? 'translate-x-full opacity-100' : ''}
-                                    ${activeTab === 'home' ? 'opacity-0' : ''}
-                                `}
-                            ></div>
-
-                            <button onClick={() => setActiveTab('hiragana')} className={`relative flex-shrink-0 flex items-center justify-center gap-1 w-32 sm:w-40 py-2 rounded-full font-bold text-[13px] sm:text-base transition-colors duration-300 z-10 ${activeTab === 'hiragana' ? 'text-stone-800' : 'text-stone-400 hover:text-stone-600'}`}>
-                                <GridIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0"/> <span className="whitespace-nowrap">ひらがな</span>
-                            </button>
-                            <button onClick={() => setActiveTab('words')} className={`relative flex-shrink-0 flex items-center justify-center gap-1 w-32 sm:w-40 py-2 rounded-full font-bold text-[13px] sm:text-base transition-colors duration-300 z-10 ${activeTab === 'words' ? 'text-stone-800' : 'text-stone-400 hover:text-stone-600'}`}>
-                                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 shrink-0"/> <span className="whitespace-nowrap">ことばずかん</span>
-                                {unreadCount > 0 && <span className="absolute top-0.5 right-2 sm:right-3 bg-red-500 text-white text-[9px] sm:text-[10px] w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm">{unreadCount}</span>}
-                            </button>
-                        </div>
-                    </div>
                     
                     {activeTab === 'home' && (
                         <div className="flex flex-col gap-8 pb-12 w-full animate-fade-in">
