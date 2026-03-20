@@ -160,11 +160,11 @@
         }));
 
         const COLOR_OPTIONS = [
-            { id: 'sky', name: '空色', class: 'border-sky-400 ring-sky-200', bg: 'bg-sky-400', hex: '#38bdf8' },
-            { id: 'green', name: '若葉色', class: 'border-green-400 ring-green-200', bg: 'bg-green-400', hex: '#4ade80' },
-            { id: 'orange', name: 'みかん', class: 'border-orange-400 ring-orange-200', bg: 'bg-orange-400', hex: '#fb923c' },
-            { id: 'purple', name: '藤色', class: 'border-purple-400 ring-purple-200', bg: 'bg-purple-400', hex: '#c084fc' },
-            { id: 'rose', name: '桜色', class: 'border-rose-400 ring-rose-200', bg: 'bg-rose-400', hex: '#fb7185' }
+            { id: 'red',    name: '赤',    class: 'border-red-400 ring-red-200',    bg: 'bg-red-400',    bgLight: '#fffafa', hex: '#f87171' },
+            { id: 'orange', name: 'オレンジ', class: 'border-orange-400 ring-orange-200', bg: 'bg-orange-400', bgLight: '#fffbf3', hex: '#fb923c' },
+            { id: 'green',  name: '若葉色', class: 'border-green-400 ring-green-200',  bg: 'bg-green-400',  bgLight: '#f0fdf4', hex: '#4ade80' },
+            { id: 'sky',    name: '空色',  class: 'border-sky-400 ring-sky-200',    bg: 'bg-sky-400',    bgLight: '#f0f9ff', hex: '#38bdf8' },
+            { id: 'purple', name: '藤色',  class: 'border-purple-400 ring-purple-200', bg: 'bg-purple-400', bgLight: '#f0e8ff', hex: '#c084fc' },
         ];
 
         const USER_COLOR_OPTIONS = [
@@ -249,7 +249,7 @@
         const Eraser = (p) => <Icon {...p}><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></Icon>;
         const Check = (p) => <Icon {...p}><polyline points="20 6 9 17 4 12"/></Icon>;
         const SettingsIcon = (p) => <Icon {...p}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></Icon>;
-        const Home = (p) => <Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+
         const Play = (p) => <Icon {...p}><polygon points="5 3 19 12 5 21 5 3"/></Icon>;
         const Loader = (p) => <Icon className="animate-spin" {...p}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></Icon>;
         const Lock = (p) => <Icon {...p}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>;
@@ -257,9 +257,7 @@
         const BookOpen = (p) => <Icon {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
         const GridIcon = (p) => <Icon {...p}><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></Icon>;
         const X = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>;
-        const ChevronDown = (p) => <Icon {...p}><path d="m6 9 6 6 6-6"/></Icon>;
         const Undo = (p) => <Icon {...p}><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></Icon>;
-        const ChevronUp = (p) => <Icon {...p}><path d="m18 15-6-6-6 6"/></Icon>;
         const EditIcon = (p) => <Icon {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Icon>;
 
         const SvgStroke = ({ strokes, strokeWidth = 5, color = "black" }) => {
@@ -272,14 +270,6 @@
                         return <path key={i} d={d} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />;
                     })}
                 </svg>
-            );
-        };
-
-        const ShotDisplay = ({ shot, strokeWidth = 8, color = "black" }) => {
-            return (
-                <div className="relative w-full h-full">
-                    <SvgStroke strokes={shot.strokes} strokeWidth={strokeWidth} color={color} />
-                </div>
             );
         };
 
@@ -463,13 +453,8 @@
                 const file = e.target.files[0];
                 if (!file) return;
 
-                const isMigration = window.confirm(
-                    "【かくにん】\nちがうGoogleアカウントへ データをうつしますか？\n" +
-                    "（「はい」をえらぶと、新しいアカウント用にIDを書き換えて移植します）"
-                );
-
                 if (!window.confirm("データを読み込みます。いまのデータはすべて消えて上書きされますが、いいですか？\n（もとに戻すことはできません）")) {
-                    e.target.value = ''; 
+                    e.target.value = '';
                     return;
                 }
 
@@ -479,30 +464,18 @@
                         const data = JSON.parse(event.target.result);
                         if (!data.version || !data.users || !data.settings) {
                             alert("正しいファイルを選んでね。");
-                            return; 
-                        }
-
-                        if (isMigration) {
-                            if (data.users) {
-                                data.users = data.users.map(u => ({
-                                    ...u,
-                                    profileId: crypto.randomUUID()
-                                }));
-                            }
-                            const resetSync = (arr) => arr ? arr.map(item => ({ ...item, synced: false })) : [];
-                            if (data.bestShots) data.bestShots = resetSync(data.bestShots);
-                            if (data.readWords) data.readWords = resetSync(data.readWords);
+                            return;
                         }
 
                         await db.transaction('rw', db.users, db.settings, db.practices, db.bestShots, db.readWords, async () => {
-                            if (data.users) { await db.users.clear(); await db.users.bulkPut(data.users); }
-                            if (data.settings) { await db.settings.clear(); await db.settings.bulkPut(data.settings); }
+                            if (data.users)     { await db.users.clear();     await db.users.bulkPut(data.users); }
+                            if (data.settings)  { await db.settings.clear();  await db.settings.bulkPut(data.settings); }
                             if (data.practices) { await db.practices.clear(); await db.practices.bulkPut(data.practices); }
                             if (data.bestShots) { await db.bestShots.clear(); await db.bestShots.bulkPut(data.bestShots); }
                             if (data.readWords) { await db.readWords.clear(); await db.readWords.bulkPut(data.readWords); }
                         });
 
-                        alert(isMigration ? "データの移植がおわりました！アプリを再起動します。" : "データのふくげんがおわりました！アプリを再起動します。");
+                        alert("データのふくげんがおわりました！アプリを再起動します。");
                         window.location.reload();
                     } catch (err) {
                         console.error("インポートに失敗しました:", err);
@@ -568,6 +541,16 @@
                                 </div>
                             </div>
 
+
+                            <div className="bg-teal-50 p-4 rounded-xl border border-teal-200 shadow-sm">
+                                <h3 className="font-bold text-lg mb-1 text-teal-800 flex items-center gap-1">✏️ 起動時の運筆ウォームアップ</h3>
+                                <p className="text-xs text-teal-600 mb-3">プロフィール選択後に、横棒・縦線・ぐるぐるの運筆練習をします。</p>
+                                <div className="flex gap-2">
+                                    <button onClick={() => saveSettings({...settings, warmupEnabled: true})}  className={`px-4 py-2 rounded-lg font-bold border-2 transition-all ${settings.warmupEnabled !== false ? 'border-teal-500 bg-teal-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>ON</button>
+                                    <button onClick={() => saveSettings({...settings, warmupEnabled: false})} className={`px-4 py-2 rounded-lg font-bold border-2 transition-all ${settings.warmupEnabled === false  ? 'border-stone-500 bg-stone-500 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>OFF</button>
+                                </div>
+                            </div>
+
                             <div className="bg-sky-50 p-4 rounded-xl border border-sky-200 shadow-sm">
                                 <h3 className="font-bold text-lg mb-1 text-sky-800 flex items-center gap-1"><Sparkles className="w-4 h-4"/> はじめての「書き順かくにん」</h3>
                                 <p className="text-xs text-sky-600 mb-3">はじめて書く文字は、おてほんのアニメーションを見るまでキャンバスに書けないようにします。</p>
@@ -619,8 +602,8 @@
 
                             {/* キャンバスサイズ設定 */}
                             <div className="bg-orange-50 p-4 rounded-xl border border-orange-200 shadow-sm">
-                                <h3 className="font-bold text-lg mb-1 text-orange-800 flex items-center gap-1">📐 れんしゅうキャンバスのおおきさ</h3>
-                                <p className="text-xs text-orange-600 mb-3">かく場所のおおきさをえらべます。「ふつう」がおすすめです。</p>
+                                <h3 className="font-bold text-lg mb-1 text-orange-800 flex items-center gap-1">📐 れんしゅうキャンバスの大きさ</h3>
+                                <p className="text-xs text-orange-600 mb-3">かく場所の大きさをえらべます。「ふつう」がおすすめです。</p>
                                 <div className="flex gap-2">
                                     {[
                                         { val: 'small',  label: 'ちいさい', canvasW: 18, refW: 13 },
@@ -676,8 +659,9 @@
 
                         <div className="space-y-6">
                             <div className="bg-purple-50 p-4 rounded-xl border border-purple-200 shadow-sm">
-                                <h3 className="font-bold text-lg mb-1 text-purple-800 flex items-center gap-1"><Sparkles className="w-4 h-4"/> ギャラリーにかざる「合格ライン」</h3>
-                                <p className="text-xs text-purple-600 mb-3">どの書き方で仕上げた時に、一覧（コレクション）へ追加するかを決めます。</p>
+                                <h3 className="font-bold text-lg mb-1 text-purple-800 flex items-center gap-1"><Sparkles className="w-4 h-4"/> コレクションの「登録ライン」</h3>
+                                <p className="text-xs text-purple-600 mb-1">どの書き方で仕上げた時に、一覧（コレクション）へ追加するかを決めます。</p>
+                                <p className="text-xs text-purple-400 mb-3">※後で変更しても、過去にかざった文字は消えません</p>
                                 <div className="flex flex-col gap-2">
                                     <button onClick={() => saveSettings({...settings, completionLevel: 1})} className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${settings.completionLevel === 1 || !settings.completionLevel ? 'border-purple-500 bg-purple-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>
                                         1： なぞり・てん・おてほん・みないで（どれでもOK）
@@ -695,10 +679,18 @@
                                 <h3 className="font-bold text-lg mb-3">各モードの枠の色設定</h3>
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2"><div className={`w-3 h-3 rounded-full ${COLOR_OPTIONS.find(c=>c.id === settings.traceColor)?.bg || 'bg-sky-400'}`}></div> 「なぞり」「てん」モードのいろ</label>
+                                        <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2"><div className={`w-3 h-3 rounded-full ${COLOR_OPTIONS.find(c=>c.id === settings.traceColor)?.bg || 'bg-red-400'}`}></div> 「なぞり」モードのいろ</label>
                                         <div className="grid grid-cols-5 gap-2">
                                             {COLOR_OPTIONS.map(color => (
                                                 <button key={`trace-${color.id}`} onClick={() => saveSettings({...settings, traceColor: color.id})} className={`w-full h-10 rounded-lg border-4 transition-all ${color.bg} ${settings.traceColor === color.id ? 'border-stone-400 scale-105 shadow-md' : 'border-transparent hover:border-stone-300'}`}></button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2"><div className={`w-3 h-3 rounded-full ${COLOR_OPTIONS.find(c=>c.id === settings.tenColor)?.bg || 'bg-orange-400'}`}></div> 「てん」モードのいろ</label>
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {COLOR_OPTIONS.map(color => (
+                                                <button key={`ten-${color.id}`} onClick={() => saveSettings({...settings, tenColor: color.id})} className={`w-full h-10 rounded-lg border-4 transition-all ${color.bg} ${settings.tenColor === color.id ? 'border-stone-400 scale-105 shadow-md' : 'border-transparent hover:border-stone-300'}`}></button>
                                             ))}
                                         </div>
                                     </div>
@@ -711,7 +703,7 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2"><div className={`w-3 h-3 rounded-full ${COLOR_OPTIONS.find(c=>c.id === settings.testColor)?.bg || 'bg-purple-400'}`}></div> 「みないで」モードのいろ</label>
+                                        <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2"><div className={`w-3 h-3 rounded-full ${COLOR_OPTIONS.find(c=>c.id === settings.testColor)?.bg || 'bg-sky-400'}`}></div> 「みないで」モードのいろ</label>
                                         <div className="grid grid-cols-5 gap-2">
                                             {COLOR_OPTIONS.map(color => (
                                                 <button key={`test-${color.id}`} onClick={() => saveSettings({...settings, testColor: color.id})} className={`w-full h-10 rounded-lg border-4 transition-all ${color.bg} ${settings.testColor === color.id ? 'border-stone-400 scale-105 shadow-md' : 'border-transparent hover:border-stone-300'}`}></button>
@@ -808,6 +800,7 @@
             const [practices, setPractices] = useState([]);
 
             // 4段階対応のログ集計
+            // ※ 'trace'/'hint' は旧バージョンで保存されたデータとの後方互換のために残す
             const sessionLogs = useMemo(() => ({
                 traceAll: practices.filter(p => p.type === 'traceAll' || p.type === 'trace').length,
                 ten:  practices.filter(p => p.type === 'ten' || p.type === 'hint').length,
@@ -957,20 +950,20 @@
 
             const undo = () => {
                 if (allStrokesRef.current.length === 0) return;
-                // 最後の1ストロークを取り除く
                 allStrokesRef.current = allStrokesRef.current.slice(0, -1);
-                // キャンバスをクリアして残りのストロークを描き直す
                 const canvas = canvasRef.current;
                 const ctx = contextRef.current;
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // canvas.width/height はデバイスピクセル解像度込みの値。
+                // ctx.scale(dpr, dpr) 済みなので、論理サイズ（CSS px）で描けばよい
                 const dpr = window.devicePixelRatio || 1;
-                const rect = canvas.getBoundingClientRect();
+                const logicalW = canvas.width / dpr;
+                const logicalH = canvas.height / dpr;
                 allStrokesRef.current.forEach(stroke => {
                     if (stroke.length === 0) return;
                     ctx.beginPath();
-                    // normX/normY（0〜200の正規化座標）→ 実際のピクセル座標に変換
-                    ctx.moveTo(stroke[0].x / 200 * rect.width, stroke[0].y / 200 * rect.height);
-                    stroke.forEach(pt => ctx.lineTo(pt.x / 200 * rect.width, pt.y / 200 * rect.height));
+                    ctx.moveTo(stroke[0].x / 200 * logicalW, stroke[0].y / 200 * logicalH);
+                    stroke.forEach(pt => ctx.lineTo(pt.x / 200 * logicalW, pt.y / 200 * logicalH));
                     ctx.stroke();
                     ctx.closePath();
                 });
@@ -1130,11 +1123,9 @@
             };
 
             const traceTheme = COLOR_OPTIONS.find(c=>c.id===settings.traceColor) || COLOR_OPTIONS[0];
-            const blankTheme = COLOR_OPTIONS.find(c=>c.id===settings.blankColor) || COLOR_OPTIONS[1];
-            const testTheme = COLOR_OPTIONS.find(c=>c.id===settings.testColor) || COLOR_OPTIONS[3];
-            
-            // ▼ てんモードの色を、なぞりモードと同じ色に統一
-            const tenTheme = traceTheme; 
+            const tenTheme   = COLOR_OPTIONS.find(c=>c.id===settings.tenColor)   || COLOR_OPTIONS[1];
+            const blankTheme = COLOR_OPTIONS.find(c=>c.id===settings.blankColor) || COLOR_OPTIONS[2];
+            const testTheme  = COLOR_OPTIONS.find(c=>c.id===settings.testColor)  || COLOR_OPTIONS[3];
 
             // モードがnull（全完了後）のときはニュートラルなグレー
             const borderColor = !practiceMode ? '#d6d3d1' :
@@ -1275,7 +1266,7 @@
                                             ${!isGoalReached || !isSelectable ? 'opacity-40 grayscale border-stone-200' + (!isSelectable && isGoalReached ? ' cursor-not-allowed' : '') : ''}`}>
                                         
                                         <div className="w-full h-full p-1 relative">
-                                            <ShotDisplay shot={p} strokeWidth={10} color="#374151" />
+                                            <SvgStroke strokes={p.strokes} strokeWidth={10} color="#374151" />
                                             
                                             {/* みないでモード時のカバー */}
                                             {isTestMode && (
@@ -1436,70 +1427,76 @@
                                 </div>
                             </div>
 
-                            <div className="flex flex-col items-center justify-center gap-3 md:gap-5 shrink-0 self-center relative">
-                                <button onClick={undo} className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600">
-                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-full flex items-center justify-center shadow-sm">
-                                        <Undo className="w-5 h-5 md:w-6 md:h-6" />
-                                    </div>
-                                    <span className="text-[10px] md:text-xs font-bold">とりけし</span>
-                                </button>
-                                <button onClick={clear} className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600">
-                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-full flex items-center justify-center shadow-sm">
-                                        <Eraser className="w-5 h-5 md:w-6 md:h-6" />
-                                    </div>
-                                    <span className="text-[10px] md:text-xs font-bold">けす</span>
-                                </button>
+                            <div className={`flex items-start gap-2 shrink-0 self-end pb-2 ${hand === 'left' ? 'flex-row-reverse' : 'flex-row'}`}>
+                                {/* とりけし・けす 縦列 */}
+                                <div className="flex flex-col items-center gap-3 md:gap-5 relative">
+                                    <button onClick={undo} className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600">
+                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-full flex items-center justify-center shadow-sm">
+                                            <Undo className="w-5 h-5 md:w-6 md:h-6" />
+                                        </div>
+                                        <span className="text-[10px] md:text-xs font-bold">とりけし</span>
+                                    </button>
+                                    <button onClick={clear} className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600">
+                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-full flex items-center justify-center shadow-sm">
+                                            <Eraser className="w-5 h-5 md:w-6 md:h-6" />
+                                        </div>
+                                        <span className="text-[10px] md:text-xs font-bold">けす</span>
+                                    </button>
+                                    {/* できたがあった場所：小指が当たっても安全な空白 */}
+                                    <div className="w-14 md:w-20 h-28 md:h-36" aria-hidden="true" />
 
-                                {strokeWarning && (
-                                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 backdrop-blur-sm animate-fade-in p-4">
-                                        <div className="bg-white rounded-2xl shadow-2xl border-4 border-red-200 p-6 w-full max-w-sm animate-bounce-in text-center">
-                                            <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <span className="text-3xl">⚠️</span>
-                                            </div>
-                                            <div className="text-red-500 font-bold mb-2 text-lg">画数がちがうみたい！</div>
-                                            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                                                この字は <strong className="text-lg text-gray-800">{targetKanji.strokes}かく</strong> だよ。<br/>
-                                                （いま書いたのは {allStrokesRef.current.length}かく）<br/>
-                                                もう一回 書いてみる？
-                                            </p>
-                                            <div className="flex gap-3">
-                                                <button onClick={() => { setStrokeWarning(false); clear(); }} className="flex-1 bg-sky-500 text-white font-bold py-3 rounded-xl shadow-md hover:bg-sky-600 active:scale-95 transition-all">かきなおす</button>
-                                                <button onClick={() => handleFinish(true)} className="flex-1 bg-gray-100 text-gray-500 font-bold py-3 rounded-xl hover:bg-gray-200 active:scale-95 transition-all text-sm">このままにする</button>
+                                    {strokeWarning && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 backdrop-blur-sm animate-fade-in p-4">
+                                            <div className="bg-white rounded-2xl shadow-2xl border-4 border-red-200 p-6 w-full max-w-sm animate-bounce-in text-center">
+                                                <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                    <span className="text-3xl">⚠️</span>
+                                                </div>
+                                                <div className="text-red-500 font-bold mb-2 text-lg">画数がちがうみたい！</div>
+                                                <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                                                    この字は <strong className="text-lg text-gray-800">{targetKanji.strokes}かく</strong> だよ。<br/>
+                                                    （いま書いたのは {allStrokesRef.current.length}かく）<br/>
+                                                    もう一回 書いてみる？
+                                                </p>
+                                                <div className="flex gap-3">
+                                                    <button onClick={() => { setStrokeWarning(false); clear(); }} className="flex-1 bg-sky-500 text-white font-bold py-3 rounded-xl shadow-md hover:bg-sky-600 active:scale-95 transition-all">かきなおす</button>
+                                                    <button onClick={() => handleFinish(true)} className="flex-1 bg-gray-100 text-gray-500 font-bold py-3 rounded-xl hover:bg-gray-200 active:scale-95 transition-all text-sm">このままにする</button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {flyingCard.active && (
-                                    <div style={{
-                                        position: 'fixed',
-                                        left: flyingCard.startX,
-                                        top: flyingCard.startY,
-                                        width: flyingCard.w,
-                                        height: flyingCard.h,
-                                        zIndex: 9999,
-                                        pointerEvents: 'none',
-                                        borderRadius: 16,
-                                        border: '3px solid #fbbf24',
-                                        overflow: 'hidden',
-                                        boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-                                        transformOrigin: 'center center',
-                                        opacity: flyingCard.flying ? 0 : 1,
-                                        transform: flyingCard.flying
-                                            ? `translate(${flyingCard.tx}px, ${flyingCard.ty}px) rotate(360deg) scale(${flyingCard.scale})`
-                                            : 'translate(0,0) rotate(0deg) scale(1)',
-                                        transition: flyingCard.flying
-                                            ? 'transform 0.42s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.38s ease-in 0.1s'
-                                            : 'none',
-                                    }}>
-                                        <img src={flyingCard.image} style={{width:'100%',height:'100%',objectFit:'contain',background:'white'}} />
-                                    </div>
-                                )}
+                                    {flyingCard.active && (
+                                        <div style={{
+                                            position: 'fixed',
+                                            left: flyingCard.startX,
+                                            top: flyingCard.startY,
+                                            width: flyingCard.w,
+                                            height: flyingCard.h,
+                                            zIndex: 9999,
+                                            pointerEvents: 'none',
+                                            borderRadius: 16,
+                                            border: '3px solid #fbbf24',
+                                            overflow: 'hidden',
+                                            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                                            transformOrigin: 'center center',
+                                            opacity: flyingCard.flying ? 0 : 1,
+                                            transform: flyingCard.flying
+                                                ? `translate(${flyingCard.tx}px, ${flyingCard.ty}px) rotate(360deg) scale(${flyingCard.scale})`
+                                                : 'translate(0,0) rotate(0deg) scale(1)',
+                                            transition: flyingCard.flying
+                                                ? 'transform 0.42s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.38s ease-in 0.1s'
+                                                : 'none',
+                                        }}>
+                                            <img src={flyingCard.image} style={{width:'100%',height:'100%',objectFit:'contain',background:'white'}} />
+                                        </div>
+                                    )}
+                                </div>
 
+                                {/* できたボタン（右利き→右端、左利き→左端） */}
                                 <button 
                                     onClick={() => handleFinish(false)}
                                     disabled={isAnimating || !hasDrawn} 
-                                    className={`flex flex-col items-center justify-center w-14 md:w-20 h-28 md:h-36 rounded-2xl shadow-md border-2 transition-all select-none touch-none gap-1 ${hasDrawn ? 'bg-gradient-to-t from-sky-400 to-sky-300 border-sky-200 text-white hover:brightness-105 active:scale-95 cursor-pointer' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'}`}
+                                    className={`flex flex-col items-center justify-center w-14 md:w-20 h-28 md:h-36 rounded-2xl shadow-md border-2 transition-all select-none touch-none gap-1 bg-gradient-to-t from-sky-400 to-sky-300 border-sky-200 text-white ${hasDrawn && !isAnimating ? 'hover:brightness-105 active:scale-95 cursor-pointer' : 'opacity-40 cursor-not-allowed'}`}
                                 >
                                     <span className="font-black leading-none" style={{display:'inline-block',transform:'rotate(-90deg)',opacity:0.95,fontSize:'1.1rem',letterSpacing:'-3px'}}>〉〉</span>
                                     <span className="text-sm md:text-base font-bold tracking-widest leading-tight py-1">できた</span>
@@ -1569,6 +1566,8 @@
                     setIsCreating(false);
                     setEditingUser(null);
                 } else {
+                    // profileId: Dexie の ++id と別に UUID を持たせている。
+                    // バックアップデータの移植（端末間コピー）時にユーザーを識別するキーとして使用。
                     const profileId = crypto.randomUUID();
                     const newUser = { name: newName.trim(), icon: newIcon, color: newColor, profileId };
                     const id = await db.users.add(newUser);
@@ -1977,12 +1976,14 @@
             );
         };
 
+
         const WordRegisterModal = ({ wordObj, bestShots, onComplete, settings }) => {
             const allChars = wordObj.word.split('');
             const targetIndices = allChars.reduce((acc, c, i) => { if (isTargetChar(c)) acc.push(i); return acc; }, []);
             const [filled, setFilled] = useState([]);
             const [celebrating, setCelebrating] = useState(false);
             const [slotAnimating, setSlotAnimating] = useState(null);
+            const [rejectedChar, setRejectedChar] = useState(null);
 
             const charCount = {};
             targetIndices.forEach(i => { charCount[allChars[i]] = (charCount[allChars[i]] || 0) + 1; });
@@ -1990,27 +1991,104 @@
             filled.forEach(i => { const c = allChars[i]; charFilled[c] = (charFilled[c] || 0) + 1; });
             const uniqueTargetChars = [...new Set(targetIndices.map(i => allChars[i]))];
 
+            // 次に押すべきスロット（左→右の順番強制）
+            const nextSlotIdx  = filled.length < targetIndices.length ? targetIndices[filled.length] : null;
+            const nextRequired = nextSlotIdx !== null ? allChars[nextSlotIdx] : null;
+
+            // バラバラ配置（初回レンダリングで確定・ことば単位で固定）
+            const scattered = useMemo(() => {
+                const n = uniqueTargetChars.length;
+                return uniqueTargetChars.map((_, i) => {
+                    const seed = wordObj.word.charCodeAt(i % wordObj.word.length) + i * 37;
+                    const pseudo = (seed * 9301 + 49297) % 233280 / 233280;
+                    const pseudo2 = ((seed + 17) * 9301 + 49297) % 233280 / 233280;
+                    const angle = (i / n) * Math.PI * 2 + pseudo * 1.2 - 0.6;
+                    const r = 60 + pseudo2 * 36;
+                    return {
+                        x: Math.cos(angle) * r,
+                        y: Math.sin(angle) * r * 0.55,
+                        rot: (pseudo - 0.5) * 22,
+                    };
+                });
+            }, [wordObj.word]);
+
+            // ピンポン音
+            const playPinpon = () => {
+                try {
+                    const ac = getAudioContext();
+                    [[1320, 0], [990, 0.22]].forEach(([freq, delay]) => {
+                        const o = ac.createOscillator(); const g = ac.createGain();
+                        o.connect(g); g.connect(ac.destination);
+                        o.type = 'sine';
+                        o.frequency.setValueAtTime(freq, ac.currentTime + delay);
+                        g.gain.setValueAtTime(0.28, ac.currentTime + delay);
+                        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + delay + 0.18);
+                        o.start(ac.currentTime + delay);
+                        o.stop(ac.currentTime + delay + 0.2);
+                    });
+                } catch(e) {}
+            };
+
+            // はじく音
+            const playReject = () => {
+                try {
+                    const ac = getAudioContext();
+                    const o = ac.createOscillator(); const g = ac.createGain();
+                    o.connect(g); g.connect(ac.destination);
+                    o.type = 'square';
+                    o.frequency.setValueAtTime(180, ac.currentTime);
+                    o.frequency.exponentialRampToValueAtTime(100, ac.currentTime + 0.12);
+                    g.gain.setValueAtTime(0.12, ac.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.14);
+                    o.start(); o.stop(ac.currentTime + 0.15);
+                } catch(e) {}
+            };
+
             const handleTapCard = (char) => {
                 if (celebrating) return;
-                const firstEmpty = targetIndices.find(i => allChars[i] === char && !filled.includes(i));
-                if (firstEmpty === undefined) return;
-                if (navigator.vibrate) navigator.vibrate(30);
+                const usedAll = (charFilled[char] || 0) >= charCount[char];
+                if (usedAll) return;
 
+                // 順番チェック
+                if (char !== nextRequired) {
+                    if (navigator.vibrate) navigator.vibrate([15, 30, 15]);
+                    playReject();
+                    setRejectedChar(char);
+                    setTimeout(() => setRejectedChar(null), 420);
+                    return;
+                }
+
+                if (navigator.vibrate) navigator.vibrate(30);
                 speakWithSettings(char, settings, { rate: 0.8, pitch: 1.2 });
 
-                setSlotAnimating(firstEmpty);
+                setSlotAnimating(nextSlotIdx);
                 setTimeout(() => setSlotAnimating(null), 400);
 
-                const newFilled = [...filled, firstEmpty];
+                const newFilled = [...filled, nextSlotIdx];
                 setFilled(newFilled);
 
                 if (newFilled.length === targetIndices.length) {
                     if (navigator.vibrate) navigator.vibrate([50, 60, 80, 60, 120]);
                     setTimeout(() => {
                         setCelebrating(true);
-                        speakWithSettings(wordObj.word, settings, { rate: 0.75, pitch: 1.1 });
+                        // 読み上げ → 終わってからピンポン
+                        if (window.speechSynthesis && settings.voiceEnabled !== false) {
+                            const utter = new SpeechSynthesisUtterance(wordObj.word);
+                            utter.lang = 'ja-JP';
+                            utter.rate = 0.75;
+                            utter.pitch = 1.1;
+                            if (settings.voiceName) {
+                                const v = window.speechSynthesis.getVoices().find(v => v.name === settings.voiceName);
+                                if (v) utter.voice = v;
+                            }
+                            utter.onend = () => { setTimeout(playPinpon, 120); };
+                            window.speechSynthesis.cancel();
+                            window.speechSynthesis.speak(utter);
+                        } else {
+                            setTimeout(playPinpon, 200);
+                        }
                     }, 350);
-                    setTimeout(() => onComplete(), 2600);
+                    setTimeout(() => onComplete(), 2800);
                 }
             };
 
@@ -2032,6 +2110,7 @@
                                 <div className="text-3xl font-kyokasho text-stone-800 tracking-widest font-bold">{wordObj.word}</div>
                             </div>
 
+                            {/* スロット列 */}
                             <div className="flex justify-center gap-3 mb-2">
                                 {allChars.map((c, i) => {
                                     if (!isTargetChar(c)) {
@@ -2040,38 +2119,54 @@
                                         );
                                     }
                                     const isFilled = filled.includes(i);
+                                    const isNext   = i === nextSlotIdx;
                                     const shot = bestShots[c];
                                     return (
                                         <div key={i} className={`w-14 h-14 rounded-2xl border-4 transition-all duration-300 overflow-hidden
-                                            ${isFilled
-                                                ? 'border-amber-400 bg-white shadow-lg'
-                                                : 'border-dashed border-amber-300 bg-amber-50/60'}`}>
+                                            ${isFilled  ? 'border-amber-400 bg-white shadow-lg'
+                                            : isNext    ? 'border-amber-400 bg-amber-50 shadow-md animate-unlock-glow'
+                                            :             'border-dashed border-amber-200 bg-amber-50/40'}`}>
                                             {isFilled && shot ? (
                                                 <div className={slotAnimating === i ? 'animate-slot-pop w-full h-full' : 'w-full h-full'}>
                                                     <SvgStroke strokes={shot.strokes} strokeWidth={9} color="#78350f"/>
                                                 </div>
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-amber-300 text-2xl font-kyokasho select-none">{c}</div>
+                                                <div className="w-full h-full flex items-center justify-center text-amber-200 text-2xl font-kyokasho select-none">{c}</div>
                                             )}
                                         </div>
                                     );
                                 })}
                             </div>
 
-                            <p className="text-center text-xs text-stone-400 font-bold mb-6">↑ カードをタップして はめよう！</p>
+                            <p className="text-center text-xs text-stone-400 font-bold mb-2">
+                                {nextRequired ? `👆 「${nextRequired}」を さがして タップ！` : ''}
+                            </p>
 
-                            <div className="flex justify-center gap-4 flex-wrap">
-                                {uniqueTargetChars.map(char => {
+                            {/* バラバラピース */}
+                            <div className="relative mx-auto" style={{ width: '260px', height: '180px' }}>
+                                {uniqueTargetChars.map((char, ci) => {
                                     const shot = bestShots[char];
                                     const usedAll = (charFilled[char] || 0) >= charCount[char];
+                                    const pos = scattered[ci] || { x: 0, y: 0, rot: 0 };
+                                    const isRejected = rejectedChar === char;
                                     return (
                                         <button key={char}
                                             onClick={() => handleTapCard(char)}
                                             disabled={usedAll}
-                                            className={`relative w-16 h-16 rounded-xl border-2 p-1 transition-all
+                                            style={{
+                                                position: 'absolute',
+                                                left:  `calc(50% + ${pos.x}px - 32px)`,
+                                                top:   `calc(50% + ${pos.y}px - 32px)`,
+                                                transform: `rotate(${isRejected ? 0 : pos.rot}deg)`,
+                                                animation: isRejected ? 'puzzle-shake 0.38s ease-in-out' : 'none',
+                                                zIndex: usedAll ? 0 : 1,
+                                            }}
+                                            className={`w-16 h-16 rounded-xl border-2 p-1 transition-all
                                                 ${usedAll
-                                                    ? 'opacity-30 grayscale cursor-not-allowed border-stone-200 bg-stone-50'
-                                                    : 'border-amber-400 bg-white shadow-md hover:shadow-xl hover:-translate-y-1 active:scale-90 cursor-pointer'}`}>
+                                                    ? 'opacity-20 grayscale cursor-not-allowed border-stone-200 bg-stone-50'
+                                                    : isRejected
+                                                        ? 'border-red-400 bg-red-50 shadow-md scale-95'
+                                                        : 'border-amber-400 bg-white shadow-md hover:shadow-xl hover:-translate-y-1 active:scale-90 cursor-pointer'}`}>
                                             {shot && <SvgStroke strokes={shot.strokes} strokeWidth={9} color="#78350f"/>}
                                             {usedAll && (
                                                 <div className="absolute inset-0 flex items-center justify-center text-green-500 text-2xl">✓</div>
@@ -2101,19 +2196,21 @@
 
         const MainApp = ({ currentUser, onLogout }) => {
             const [view, setView] = useState('grid');
-            const [previousView, setPreviousView] = useState('grid');
             const [activeTab, setActiveTab] = useState('home'); 
             const [selectedKanji, setSelectedKanji] = useState(null);
             const [bestShots, setBestShots] = useState({});
             
             // 4段階設定のデフォルト値
-            const [settings, setSettings] = useState({ targetCount: 5, traceColor: 'sky', blankColor: 'green', testColor: 'purple', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [], soundEnabled: true, voiceEnabled: true, traceAllTarget: 1, tenTarget: 1, blankTarget: 1, testTarget: 1 });
+            const [settings, setSettings] = useState({ warmupEnabled: true, traceColor: 'red', tenColor: 'green', blankColor: 'sky', testColor: 'purple', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [], soundEnabled: true, voiceEnabled: true, traceAllTarget: 1, tenTarget: 1, blankTarget: 1, testTarget: 1 });
             
             const [newWordAlert, setNewWordAlert] = useState(null);
             const [wordRegisterTarget, setWordRegisterTarget] = useState(null);
+            const [pendingWordQueue, setPendingWordQueue] = useState([]);
             const [starCelebration, setStarCelebration] = useState(null);
-            const prevTotalRef = useRef(null); 
+            const prevTotalRef = useRef(null);
             const [readWords, setReadWords] = useState([]);
+            // setBestShots コールバック内で最新の readWords を参照するための ref
+            const readWordsRef = useRef([]);
 
             const longPressTimerRef = useRef(null);
             const isLongPressedRef = useRef(false);
@@ -2202,7 +2299,9 @@
                         prevTotalRef.current = shots.length;
 
                         const reads = await db.readWords.where('userId').equals(currentUser.id).toArray();
-                        setReadWords(reads.map(r => r.wordId));
+                        const readIds = reads.map(r => r.wordId);
+                        setReadWords(readIds);
+                        readWordsRef.current = readIds;
                     }
                 };
                 load();
@@ -2230,8 +2329,20 @@
 
             const handleWordRegistered = async (wordId) => {
                 await db.readWords.put({ userId: currentUser.id, wordId: wordId });
-                setReadWords(prev => [...prev, wordId]);
+                setReadWords(prev => {
+                    const next = [...prev, wordId];
+                    readWordsRef.current = next;
+                    return next;
+                });
                 setWordRegisterTarget(null);
+                // キューに次のことばがあれば連続表示
+                if (pendingWordQueue.length > 1) {
+                    const remaining = pendingWordQueue.slice(1);
+                    setPendingWordQueue(remaining);
+                    setTimeout(() => setWordRegisterTarget(remaining[0]), 350);
+                } else {
+                    setPendingWordQueue([]);
+                }
             };
 
             const handleSaveComplete = (char, practiceType) => {
@@ -2270,12 +2381,13 @@
                 setTimeout(() => {
                     setBestShots(currentShots => {
                         const newlyUnlocked = (typeof WORD_DATA !== 'undefined' ? WORD_DATA : []).filter(w => {
-                            if (readWords.includes(w.id)) return false;
+                            if (readWordsRef.current.includes(w.id)) return false;
                             const charsOnly = w.word.split('').filter(c => isTargetChar(c));
                             if (charsOnly.length === 0) return false;
-                            const wasUnlocked = charsOnly.every(c => c !== char && currentShots[c]);
+                            // char を除いた残りが全部揃っていた = 今回の登録で初めて解禁
+                            const wasUnlocked = charsOnly.filter(c => c !== char).every(c => currentShots[c]);
                             const isNowUnlocked = charsOnly.every(c => currentShots[c]);
-                            return !wasUnlocked && isNowUnlocked;
+                            return wasUnlocked && isNowUnlocked;
                         });
                         if (newlyUnlocked.length > 0) {
                             setNewWordAlert(newlyUnlocked);
@@ -2403,8 +2515,8 @@
 
             const getKanaThemeColor = (shotType) => {
                 if (shotType === 'traceAll' || shotType === 'trace') return COLOR_OPTIONS.find(c => c.id === settings.traceColor)?.class || COLOR_OPTIONS[0].class;
-                if (shotType === 'ten' || shotType === 'hint') return 'border-amber-400 ring-amber-200';
-                if (shotType === 'blank') return COLOR_OPTIONS.find(c => c.id === settings.blankColor)?.class || COLOR_OPTIONS[1].class;
+                if (shotType === 'ten' || shotType === 'hint') return COLOR_OPTIONS.find(c => c.id === settings.tenColor)?.class || COLOR_OPTIONS[1].class;
+                if (shotType === 'blank') return COLOR_OPTIONS.find(c => c.id === settings.blankColor)?.class || COLOR_OPTIONS[2].class;
                 return COLOR_OPTIONS.find(c => c.id === settings.testColor)?.class || COLOR_OPTIONS[3].class;
             };
 
@@ -2452,12 +2564,15 @@
                                         
                                         let colorClass = 'border-2 border-dashed border-stone-300 bg-[#f4f1eb] text-stone-400';
                                         let displayContent;
+                                        let bgLightHex = null;
                                         
                                         if (shot) {
                                             const themeColor = getKanaThemeColor(shot.type);
-                                            // tenモードの場合は強制的にamberの背景クラスを付与するなど微調整
-                                            const bgClass = (shot.type === 'ten' || shot.type === 'hint') ? 'bg-amber-50' : 'bg-white';
-                                            colorClass = `${themeColor} ${bgClass} border-2 shadow-sm`;
+                                            const isTen = (shot.type === 'ten' || shot.type === 'hint');
+                                            bgLightHex = isTen
+                                                ? (COLOR_OPTIONS.find(c => c.id === settings.tenColor)?.bgLight || '#fffbf3')
+                                                : null;
+                                            colorClass = `${themeColor} border-2 shadow-sm`;
                                             if (isSelected) colorClass += " ring-2 ring-amber-400 ring-offset-1";
                                             
                                             displayContent = (
@@ -2477,6 +2592,7 @@
                                                 onPointerLeave={(e) => handleTouchEnd(kanjiData, e)}
                                                 onContextMenu={(e) => e.preventDefault()}
                                                 className={`relative w-11 h-11 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-lg cursor-pointer hover:scale-110 shadow-sm flex items-center justify-center transition-all select-none ${colorClass}`}
+                                                style={bgLightHex ? { backgroundColor: bgLightHex } : undefined}
                                             >
                                                 {isNewKanji && <div className="absolute top-0 left-0 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-br z-20 shadow-sm pointer-events-none">NEW</div>}
                                                 {isSelected && <div className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white rounded-full p-0.5 shadow-md z-20 pointer-events-none"><Check className="w-2 h-2"/></div>}
@@ -2491,8 +2607,8 @@
                 );
             };
 
-            if (view === 'admin') return <AdminScreen onBack={() => setView(previousView)} settings={settings} saveSettings={saveSettingsWrapper} />;
-            if (view === 'practice') return <PracticeStudio currentUser={currentUser} targetKanji={selectedKanji} settings={settings} onBack={() => setView('grid')} onSaveBest={saveBestShot} onSaveComplete={handleSaveComplete} onOpenAdmin={() => { setPreviousView(view); setView('admin'); }} onToggleSound={() => saveSettingsWrapper({...settings, soundEnabled: settings.soundEnabled === false ? true : false})} onToggleVoice={() => saveSettingsWrapper({...settings, voiceEnabled: settings.voiceEnabled === false ? true : false})} />;
+            if (view === 'admin') return <AdminScreen onBack={() => setView('grid')} settings={settings} saveSettings={saveSettingsWrapper} />;
+            if (view === 'practice') return <PracticeStudio currentUser={currentUser} targetKanji={selectedKanji} settings={settings} onBack={() => setView('grid')} onSaveBest={saveBestShot} onSaveComplete={handleSaveComplete} onOpenAdmin={() => setView('admin')} onToggleSound={() => saveSettingsWrapper({...settings, soundEnabled: !(settings.soundEnabled !== false)})} onToggleVoice={() => saveSettingsWrapper({...settings, voiceEnabled: !(settings.voiceEnabled !== false)})} />;
 
             const unlockedWords = getUnlockedWords(bestShots);
             const unreadCount = unlockedWords.filter(w => !readWords.includes(w.id)).length;
@@ -2529,20 +2645,23 @@
                             </button>
                         </div>
 
-                        {/* 中央：ひらがな/ことばずかん タブ */}
+                        {/* 中央：ホーム/ひらがな/ことばずかん タブ */}
                         <div className="flex justify-center flex-1 min-w-0">
                             <div className="relative flex bg-white border-2 border-[#e8e4db] p-1 rounded-full shadow-sm overflow-hidden">
                                 <div 
-                                    className={`absolute top-1 bottom-1 w-20 sm:w-28 rounded-full transition-all duration-500 ease-[cubic-bezier(0.165,0.84,0.44,1)] shadow-sm z-0 bg-[#ece8df]
-                                        ${activeTab === 'hiragana' ? 'translate-x-0 opacity-100' : ''}
-                                        ${activeTab === 'words' ? 'translate-x-full opacity-100' : ''}
-                                        ${activeTab === 'home' ? 'opacity-0' : ''}
+                                    className={`absolute top-1 bottom-1 w-16 sm:w-24 rounded-full transition-all duration-500 ease-[cubic-bezier(0.165,0.84,0.44,1)] shadow-sm z-0 bg-[#ece8df]
+                                        ${activeTab === 'home'     ? 'translate-x-0 opacity-100' : ''}
+                                        ${activeTab === 'hiragana' ? 'translate-x-full opacity-100' : ''}
+                                        ${activeTab === 'words'    ? 'translate-x-[200%] opacity-100' : ''}
                                     `}
                                 ></div>
-                                <button onClick={() => setActiveTab('hiragana')} className={`relative flex-shrink-0 flex items-center justify-center gap-1 w-20 sm:w-28 py-1.5 rounded-full font-bold text-[11px] sm:text-sm transition-colors duration-300 z-10 ${activeTab === 'hiragana' ? 'text-stone-800' : 'text-stone-400 hover:text-stone-600'}`}>
+                                <button onClick={() => { setActiveTab('home');     window.scrollTo(0, 0); }} className={`relative flex-shrink-0 flex items-center justify-center gap-1 w-16 sm:w-24 py-1.5 rounded-full font-bold text-[11px] sm:text-sm transition-colors duration-300 z-10 ${activeTab === 'home' ? 'text-stone-800' : 'text-stone-400 hover:text-stone-600'}`}>
+                                    <span className="text-xs sm:text-sm">🏠</span><span className="whitespace-nowrap">ホーム</span>
+                                </button>
+                                <button onClick={() => { setActiveTab('hiragana'); window.scrollTo(0, 0); }} className={`relative flex-shrink-0 flex items-center justify-center gap-1 w-16 sm:w-24 py-1.5 rounded-full font-bold text-[11px] sm:text-sm transition-colors duration-300 z-10 ${activeTab === 'hiragana' ? 'text-stone-800' : 'text-stone-400 hover:text-stone-600'}`}>
                                     <GridIcon className="w-3.5 h-3.5 shrink-0"/> <span className="whitespace-nowrap">ひらがな</span>
                                 </button>
-                                <button onClick={() => setActiveTab('words')} className={`relative flex-shrink-0 flex items-center justify-center gap-1 w-20 sm:w-28 py-1.5 rounded-full font-bold text-[11px] sm:text-sm transition-colors duration-300 z-10 ${activeTab === 'words' ? 'text-stone-800' : 'text-stone-400 hover:text-stone-600'}`}>
+                                <button onClick={() => { setActiveTab('words');    window.scrollTo(0, 0); }} className={`relative flex-shrink-0 flex items-center justify-center gap-1 w-16 sm:w-24 py-1.5 rounded-full font-bold text-[11px] sm:text-sm transition-colors duration-300 z-10 ${activeTab === 'words' ? 'text-stone-800' : 'text-stone-400 hover:text-stone-600'}`}>
                                     <BookOpen className="w-3.5 h-3.5 shrink-0"/> <span className="whitespace-nowrap">ことばずかん</span>
                                     {unreadCount > 0 && <span className="absolute top-0 right-0.5 bg-red-500 text-white text-[8px] w-3.5 h-3.5 flex items-center justify-center rounded-full border border-white shadow-sm">{unreadCount}</span>}
                                 </button>
@@ -2552,14 +2671,14 @@
                         {/* 右：効果音 + 音声 */}
                         <div className="flex items-center gap-2 shrink-0">
                             <button
-                                onClick={() => saveSettingsWrapper({...settings, soundEnabled: settings.soundEnabled === false ? true : false})}
+                                onClick={() => saveSettingsWrapper({...settings, soundEnabled: !(settings.soundEnabled !== false)})}
                                 title={settings.soundEnabled !== false ? "こうかおんをけす" : "こうかおんをならす"}
                                 className="shrink-0 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full shadow-sm border-2 border-stone-200 bg-white active:scale-95 transition-transform text-xl"
                             >
                                 {settings.soundEnabled !== false ? '🔔' : '🔕'}
                             </button>
                             <button
-                                onClick={() => saveSettingsWrapper({...settings, voiceEnabled: settings.voiceEnabled === false ? true : false})}
+                                onClick={() => saveSettingsWrapper({...settings, voiceEnabled: !(settings.voiceEnabled !== false)})}
                                 title={settings.voiceEnabled !== false ? "おしゃべりをけす" : "おしゃべりをならす"}
                                 className="shrink-0 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full shadow-sm border-2 border-stone-200 bg-white active:scale-95 transition-transform text-xl"
                             >
@@ -2586,9 +2705,12 @@
                                 <div className="flex gap-3 w-full">
                                     <button
                                         onClick={() => {
-                                            const target = newWordAlert[0];
+                                            const queue = newWordAlert.map(w => ({ ...w, pendingShots: bestShots }));
                                             setNewWordAlert(null);
-                                            setWordRegisterTarget({ ...target, pendingShots: bestShots });
+                                            setActiveTab('words');
+                                            window.scrollTo(0, 0);
+                                            setPendingWordQueue(queue);
+                                            setWordRegisterTarget(queue[0]);
                                         }}
                                         className="flex-1 py-2.5 rounded-full font-bold text-white bg-amber-400 border-2 border-amber-500 shadow-md active:scale-95 transition-transform text-sm"
                                     >
@@ -2755,11 +2877,14 @@
                                         <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2 md:gap-2.5">
                                             {newKanjis.map(item => {
                                                 const themeColor = getKanaThemeColor(item.shot.type);
-                                                const bgClass = (item.shot.type === 'ten' || item.shot.type === 'hint') ? 'bg-amber-50' : 'bg-white';
+                                                const isTen = (item.shot.type === 'ten' || item.shot.type === 'hint');
+                                                const bgLightHex = isTen
+                                                    ? (COLOR_OPTIONS.find(c => c.id === settings.tenColor)?.bgLight || '#fffbf3')
+                                                    : null;
                                                 return (
                                                     <div key={`col-new-${item.char}`} id={`col-new-${item.char}`} onClick={() => { setSelectedKanji(item); setView('practice'); }}
-                                                        className={`relative aspect-square rounded-xl cursor-pointer hover:scale-115 hover:-translate-y-1 shadow-md flex items-center justify-center transition-all border-2 ${bgClass} ${themeColor}`}
-                                                        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.10)' }}
+                                                        className={`relative aspect-square rounded-xl cursor-pointer hover:scale-115 hover:-translate-y-1 shadow-md flex items-center justify-center transition-all border-2 ${themeColor}`}
+                                                        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.10)', ...(bgLightHex ? { backgroundColor: bgLightHex } : { backgroundColor: 'white' }) }}
                                                     >
                                                         <div className="w-full h-full overflow-hidden rounded-lg p-0.5 pointer-events-none relative">
                                                             <SvgStroke strokes={item.shot.strokes} strokeWidth={8} color="#1F2937" />
@@ -2896,6 +3021,10 @@
                                                 </div>
                                             )}
 
+                                            {isUnread && (
+                                                <div className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-sm z-20" />
+                                            )}
+
                                             <div className="p-3 pt-2">
                                                 <div className={`text-4xl mt-1 transition-transform ${isUnread ? 'animate-bounce' : 'group-hover:scale-110'}`}
                                                     style={isUnread ? { animationDuration: '1.8s' } : {}}>
@@ -2976,51 +3105,262 @@
             );
         }
 
-        const LoginScreen = ({ onLogin }) => {
-            const [loading, setLoading] = useState(false);
-            const [error, setError] = useState(null);
 
-            const handleGoogleLogin = async () => {
-                setLoading(true);
-                setError(null);
-                try {
-                    const { error } = await supabaseClient.auth.signInWithOAuth({
-                        provider: 'google',
-                        options: {
-                            redirectTo: 'https://hiragana-collection.vercel.app'
-                        }
-                    });
-                    if (error) throw error;
-                } catch(e) {
-                    setError('ログインできませんでした。もう一度試してください。');
-                    setLoading(false);
-                }
+
+        // =====================================================
+        // ▼ WarmupScreen ― 起動時の運筆ウォームアップ
+        // =====================================================
+        const WarmupScreen = ({ hand, bgColor, onComplete }) => {
+            const isRight = (hand || 'right') === 'right';
+
+            const EXERCISES = [
+                { id: 'h1',  label: isRight ? 'よこに ながーく →' : '← よこに ながーく', sub: '👍 おやゆびで うごかしてね',     count: 3, guide: isRight ? 'h_ltr' : 'h_rtl', color: '#38bdf8' },
+                { id: 'v1',  label: 'たてに ながーく ↓',                                   sub: '☝️ ひとさしゆびで うごかしてね', count: 3, guide: 'v_down',      color: '#4ade80' },
+                { id: 'h2',  label: isRight ? '← ぎゃくむきに' : 'ぎゃくむきに →',        sub: '🤏 さんぼんゆびで うごかしてね',     count: 3, guide: isRight ? 'h_rtl' : 'h_ltr', color: '#fb923c' },
+                { id: 'zz',  label: 'ギザギザ ～',                                          sub: '',                               count: 3, guide: 'zigzag',      color: '#f472b6' },
+                { id: 'cw',  label: 'ぐるぐる 🌀',                                          sub: '',                               count: 1, guide: 'circle_cw',   color: '#a78bfa' },
+                { id: 'ccw', label: 'ぎゃくぐるぐる 🌀',                                       sub: '',                               count: 1, guide: 'circle_ccw',  color: '#f59e0b' },
+            ];
+
+            const GUIDE_PATHS = {
+                h_ltr:      { d: 'M 12,50 L 88,50', dashLen: 80,  arrow: [[80,43],[88,50],[80,57]] },
+                h_rtl:      { d: 'M 88,50 L 12,50', dashLen: 80,  arrow: [[20,43],[12,50],[20,57]] },
+                v_down:     { d: 'M 50,12 L 50,88', dashLen: 80,  arrow: [[43,80],[50,88],[57,80]] },
+                zigzag:     { d: 'M 5,62 L 20,28 L 35,62 L 50,28 L 65,62 L 80,28 L 95,62', dashLen: 220 },
+                circle_cw:  { d: 'M 50.0,50.0 L 50.3,50.0 L 50.6,50.2 L 50.8,50.3 L 51.0,50.6 L 51.2,50.9 L 51.3,51.3 L 51.3,51.7 L 51.2,52.1 L 51.0,52.5 L 50.8,52.9 L 50.4,53.3 L 50.0,53.6 L 49.5,53.9 L 48.9,54.1 L 48.3,54.2 L 47.6,54.2 L 46.9,54.0 L 46.2,53.8 L 45.5,53.5 L 44.8,53.0 L 44.2,52.4 L 43.6,51.7 L 43.2,50.9 L 42.8,50.0 L 42.6,49.0 L 42.5,48.0 L 42.5,46.9 L 42.7,45.8 L 43.1,44.7 L 43.6,43.6 L 44.3,42.6 L 45.2,41.7 L 46.2,40.9 L 47.4,40.1 L 48.6,39.6 L 50.0,39.2 L 51.4,39.0 L 53.0,39.0 L 54.5,39.2 L 56.0,39.6 L 57.5,40.2 L 58.9,41.1 L 60.2,42.1 L 61.4,43.4 L 62.5,44.8 L 63.3,46.4 L 64.0,48.2 L 64.4,50.0 L 64.6,51.9 L 64.5,53.9 L 64.1,55.9 L 63.5,57.8 L 62.6,59.7 L 61.5,61.5 L 60.0,63.1 L 58.4,64.5 L 56.5,65.8 L 54.5,66.8 L 52.3,67.5 L 50.0,68.0 L 47.6,68.1 L 45.2,68.0 L 42.8,67.5 L 40.4,66.6 L 38.1,65.5 L 36.0,64.0 L 34.1,62.2 L 32.3,60.2 L 30.9,57.9 L 29.7,55.4 L 28.9,52.8 L 28.4,50.0 L 28.3,47.1 L 28.6,44.3 L 29.2,41.4 L 30.3,38.6 L 31.7,35.9 L 33.5,33.5 L 35.6,31.2 L 38.0,29.2 L 40.7,27.5 L 43.6,26.2 L 46.7,25.3 L 50.0,24.8 L 53.3,24.7 L 56.7,25.1 L 60.0,25.9 L 63.2,27.1 L 66.3,28.8 L 69.1,30.9 L 71.7,33.4 L 73.9,36.2 L 75.8,39.3 L 77.2,42.7 L 78.3,46.3 L 78.8,50.0 L 78.9,53.8 L 78.4,57.6 L 77.4,61.4 L 76.0,65.0 L 74.0,68.4 L 71.6,71.6 L 68.8,74.5 L 65.6,77.0 L 62.1,79.1 L 58.2,80.7 L 54.2,81.8 L 50.0,82.4 L 45.7,82.4 L 41.5,81.9 L 37.3,80.8 L 33.2,79.1 L 29.4,76.9 L 25.8,74.2 L 22.6,71.0 L 19.9,67.4 L 17.6,63.4 L 15.8,59.2 L 14.6,54.7 L 14.0,50.0',  dashLen: 292  },
+                circle_ccw: { d: 'M 50.0,50.0 L 50.3,50.0 L 50.6,49.8 L 50.8,49.7 L 51.0,49.4 L 51.2,49.1 L 51.3,48.7 L 51.3,48.3 L 51.2,47.9 L 51.0,47.5 L 50.8,47.1 L 50.4,46.7 L 50.0,46.4 L 49.5,46.1 L 48.9,45.9 L 48.3,45.8 L 47.6,45.8 L 46.9,46.0 L 46.2,46.2 L 45.5,46.5 L 44.8,47.0 L 44.2,47.6 L 43.6,48.3 L 43.2,49.1 L 42.8,50.0 L 42.6,51.0 L 42.5,52.0 L 42.5,53.1 L 42.7,54.2 L 43.1,55.3 L 43.6,56.4 L 44.3,57.4 L 45.2,58.3 L 46.2,59.1 L 47.4,59.9 L 48.6,60.4 L 50.0,60.8 L 51.4,61.0 L 53.0,61.0 L 54.5,60.8 L 56.0,60.4 L 57.5,59.8 L 58.9,58.9 L 60.2,57.9 L 61.4,56.6 L 62.5,55.2 L 63.3,53.6 L 64.0,51.8 L 64.4,50.0 L 64.6,48.1 L 64.5,46.1 L 64.1,44.1 L 63.5,42.2 L 62.6,40.3 L 61.5,38.5 L 60.0,36.9 L 58.4,35.5 L 56.5,34.2 L 54.5,33.2 L 52.3,32.5 L 50.0,32.0 L 47.6,31.9 L 45.2,32.0 L 42.8,32.5 L 40.4,33.4 L 38.1,34.5 L 36.0,36.0 L 34.1,37.8 L 32.3,39.8 L 30.9,42.1 L 29.7,44.6 L 28.9,47.2 L 28.4,50.0 L 28.3,52.9 L 28.6,55.7 L 29.2,58.6 L 30.3,61.4 L 31.7,64.1 L 33.5,66.5 L 35.6,68.8 L 38.0,70.8 L 40.7,72.5 L 43.6,73.8 L 46.7,74.7 L 50.0,75.2 L 53.3,75.3 L 56.7,74.9 L 60.0,74.1 L 63.2,72.9 L 66.3,71.2 L 69.1,69.1 L 71.7,66.6 L 73.9,63.8 L 75.8,60.7 L 77.2,57.3 L 78.3,53.7 L 78.8,50.0 L 78.9,46.2 L 78.4,42.4 L 77.4,38.6 L 76.0,35.0 L 74.0,31.6 L 71.6,28.4 L 68.8,25.5 L 65.6,23.0 L 62.1,20.9 L 58.2,19.3 L 54.2,18.2 L 50.0,17.6 L 45.7,17.6 L 41.5,18.1 L 37.3,19.2 L 33.2,20.9 L 29.4,23.1 L 25.8,25.8 L 22.6,29.0 L 19.9,32.6 L 17.6,36.6 L 15.8,40.8 L 14.6,45.3 L 14.0,50.0', dashLen: 292 },
             };
 
+            const [exIdx, setExIdx] = useState(0);
+            const [strokeCount, setStrokeCount] = useState(0);
+            const [flash, setFlash] = useState(false);
+            const [exiting, setExiting] = useState(false);
+            const canvasRef = useRef(null);
+            const ctxRef = useRef(null);
+            const isDrawingRef = useRef(false);
+            const currentEx = EXERCISES[exIdx];
+            const gp = GUIDE_PATHS[currentEx.guide];
+
+            const adjustCanvas = useCallback(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const rect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                if (Math.abs(canvas.width - rect.width * dpr) > 1 || canvas.width === 0) {
+                    canvas.width = rect.width * dpr;
+                    canvas.height = rect.height * dpr;
+                    const ctx = canvas.getContext('2d');
+                    ctx.scale(dpr, dpr);
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.strokeStyle = '#1f2937';
+                    ctx.lineWidth = 10;
+                    ctxRef.current = ctx;
+                }
+            }, []);
+
+            useEffect(() => {
+                const t = setTimeout(adjustCanvas, 100);
+                const canvas = canvasRef.current;
+                const prevent = (e) => { if (e.target === canvas) e.preventDefault(); };
+                document.body.addEventListener('touchmove', prevent, { passive: false });
+                return () => { clearTimeout(t); document.body.removeEventListener('touchmove', prevent); };
+            }, [exIdx, adjustCanvas]);
+
+            const getPos = (e) => {
+                const canvas = canvasRef.current;
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: clientX - rect.left, y: clientY - rect.top };
+            };
+
+            const onStart = (e) => {
+                if (flash) return;
+                adjustCanvas();
+                const { x, y } = getPos(e);
+                ctxRef.current.beginPath();
+                ctxRef.current.moveTo(x, y);
+                isDrawingRef.current = true;
+            };
+
+            const onMove = (e) => {
+                if (!isDrawingRef.current) return;
+                const { x, y } = getPos(e);
+                ctxRef.current.lineTo(x, y);
+                ctxRef.current.stroke();
+            };
+
+            const onEnd = () => {
+                if (!isDrawingRef.current) return;
+                isDrawingRef.current = false;
+                ctxRef.current.closePath();
+
+                const next = strokeCount + 1;
+                setFlash(true);
+                try {
+                    const ac = getAudioContext();
+                    const o = ac.createOscillator(); const g = ac.createGain();
+                    o.connect(g); g.connect(ac.destination);
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(480 + next * 110, ac.currentTime);
+                    g.gain.setValueAtTime(0.18, ac.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.22);
+                    o.start(); o.stop(ac.currentTime + 0.25);
+                } catch(err) {}
+
+                setTimeout(() => {
+                    setFlash(false);
+                    const canvas = canvasRef.current;
+                    if (ctxRef.current && canvas) ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
+
+                    if (next >= currentEx.count) {
+                        if (exIdx + 1 >= EXERCISES.length) {
+                            // 全完了：ファンファーレ
+                            try {
+                                const ac = getAudioContext();
+                                const fanfare = [
+                                    { freq: 523, t: 0,    dur: 0.12 },
+                                    { freq: 659, t: 0.11, dur: 0.12 },
+                                    { freq: 784, t: 0.22, dur: 0.12 },
+                                    { freq: 1047,t: 0.33, dur: 0.28 },
+                                    { freq: 880, t: 0.38, dur: 0.18 },
+                                    { freq: 1047,t: 0.52, dur: 0.45 },
+                                ];
+                                fanfare.forEach(({ freq, t, dur }) => {
+                                    const o = ac.createOscillator(); const g = ac.createGain();
+                                    o.connect(g); g.connect(ac.destination);
+                                    o.type = 'triangle';
+                                    o.frequency.setValueAtTime(freq, ac.currentTime + t);
+                                    g.gain.setValueAtTime(0, ac.currentTime + t);
+                                    g.gain.linearRampToValueAtTime(0.22, ac.currentTime + t + 0.02);
+                                    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + t + dur);
+                                    o.start(ac.currentTime + t);
+                                    o.stop(ac.currentTime + t + dur + 0.05);
+                                });
+                            } catch(err) {}
+                            setExiting(true);
+                            setTimeout(onComplete, 1200);
+                        } else {
+                            setExIdx(prev => prev + 1);
+                            setStrokeCount(0);
+                        }
+                    } else {
+                        setStrokeCount(next);
+                    }
+                }, 380);
+            };
+
+            const doneCount = exIdx + (flash && strokeCount + 1 >= currentEx.count ? 1 : 0);
+
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-[#fdfbf7] p-6">
-                    <div className="text-6xl mb-4">📖</div>
-                    <h1 className="text-3xl font-bold font-kyokasho text-stone-800 mb-2">ひらがなコレクション</h1>
-                    <p className="text-stone-400 text-sm mb-10 font-kyokasho">かんじを かいて あつめよう！</p>
-                    <button
-                        onClick={handleGoogleLogin}
-                        disabled={loading}
-                        className="flex items-center gap-3 bg-white border-2 border-stone-200 rounded-2xl px-8 py-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-50">
-                        {loading ? (
-                            <span className="text-stone-500 font-bold">ログイン中...</span>
-                        ) : (
-                            <>
-                                <svg width="24" height="24" viewBox="0 0 24 24">
-                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                                </svg>
-                                <span className="text-stone-700 font-bold text-lg">Googleでログイン</span>
-                            </>
+                <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-opacity duration-500 ${exiting ? 'opacity-0' : 'opacity-100'}`}
+                    style={{ background: bgColor || '#fdfbf7' }}>
+
+                    {/* 進捗ドット */}
+                    <div className="flex gap-2.5 mb-6">
+                        {EXERCISES.map((ex, i) => (
+                            <div key={i} className="w-3.5 h-3.5 rounded-full transition-all duration-300"
+                                style={{
+                                    backgroundColor: i < doneCount ? '#4ade80' : i === exIdx ? ex.color : '#e7e5e4',
+                                    transform: i === exIdx ? 'scale(1.35)' : 'scale(1)',
+                                    boxShadow: i === exIdx ? `0 0 0 3px ${ex.color}44` : 'none',
+                                }} />
+                        ))}
+                    </div>
+
+                    {/* 見出し */}
+                    <div className="text-center mb-5 px-6" style={{ minHeight: '5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div className="text-2xl sm:text-3xl font-bold text-stone-700 font-kyokasho tracking-wide">
+                            {currentEx.label}
+                        </div>
+                        {currentEx.sub && <div className="text-sm text-stone-400 mt-1.5">{currentEx.sub}</div>}
+                    </div>
+
+                    {/* キャンバスエリア */}
+                    <div className="relative rounded-3xl overflow-hidden transition-all duration-200"
+                        style={{
+                            width:  'min(72vw, 300px)',
+                            height: 'min(72vw, 300px)',
+                            border: `4px solid ${flash ? '#4ade80' : currentEx.color}`,
+                            boxShadow: flash ? `0 0 0 6px #4ade8033` : `0 4px 20px ${currentEx.color}44`,
+                            transform: flash ? 'scale(1.03)' : 'scale(1)',
+                            background: 'white',
+                        }}>
+
+                        {/* なぞり線（静的・完全パス表示） */}
+                        <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" style={{ opacity: 0.12 }}>
+                            <path d={gp.d} fill="none" stroke="#94a3b8"
+                                strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+
+                        {/* ガイドSVG（ループアニメーション） */}
+                        <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" style={{ opacity: 0.22 }}>
+                            <defs>
+                                <style>{`
+                                    @keyframes wgu-${currentEx.id} {
+                                        0%   { stroke-dashoffset: ${gp.dashLen}; }
+                                        85%  { stroke-dashoffset: 0; }
+                                        100% { stroke-dashoffset: 0; }
+                                    }
+                                    .wgu-${currentEx.id} {
+                                        stroke-dasharray: ${gp.dashLen};
+                                        stroke-dashoffset: ${gp.dashLen};
+                                        animation: wgu-${currentEx.id} 2s ease-in-out infinite;
+                                    }
+                                `}</style>
+                            </defs>
+                            <path className={`wgu-${currentEx.id}`}
+                                d={gp.d} fill="none" stroke={currentEx.color}
+                                strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+                            {gp.arrow && (
+                                <polygon points={gp.arrow.map(p => p.join(',')).join(' ')}
+                                    fill={currentEx.color} opacity="0.55" />
+                            )}
+                        </svg>
+
+                        {/* 十字ガイド */}
+                        <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.12 }}>
+                            <div className="absolute top-1/2 w-full border-t-2 border-dashed border-stone-500" />
+                            <div className="absolute left-1/2 h-full border-l-2 border-dashed border-stone-500" />
+                        </div>
+
+                        {/* 描画キャンバス */}
+                        <canvas ref={canvasRef}
+                            className="absolute inset-0 w-full h-full touch-none z-10"
+                            onMouseDown={onStart} onMouseMove={onMove} onMouseUp={onEnd} onMouseLeave={onEnd}
+                            onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd}
+                        />
+
+                        {/* 完了フラッシュ */}
+                        {flash && (
+                            <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+                                style={{ background: '#4ade8018' }}>
+                                <span className="text-5xl drop-shadow">✅</span>
+                            </div>
                         )}
+                    </div>
+
+                    {/* 本数ドット */}
+                    <div className="flex gap-3 mt-5 items-center" style={{ height: '1.5rem' }}>
+                        {Array.from({ length: currentEx.count }).map((_, i) => (
+                            <div key={i} className="w-5 h-5 rounded-full border-2 transition-all duration-300"
+                                style={{
+                                    backgroundColor: i < strokeCount ? currentEx.color : 'transparent',
+                                    borderColor:     i < strokeCount ? currentEx.color : '#d6d3d1',
+                                    transform: flash && i === strokeCount - 1 ? 'scale(1.5)' : 'scale(1)',
+                                }} />
+                        ))}
+                    </div>
+
+                    {/* とばすボタン */}
+                    <button
+                        onClick={() => { setExiting(true); setTimeout(onComplete, 400); }}
+                        className="absolute bottom-6 right-6 text-xs text-stone-300 hover:text-stone-500 transition-colors px-3 py-1.5 rounded-full border border-stone-200 hover:border-stone-300"
+                        style={{ background: 'rgba(255,255,255,0.6)' }}
+                    >
+                        とばす
                     </button>
-                    {error && <p className="mt-4 text-red-500 text-sm">{error}</p>}
                 </div>
             );
         };
@@ -3030,11 +3370,19 @@
         // =====================================================
         function App() {
             const [currentUser, setCurrentUser] = useState(null);
+            const [showWarmup, setShowWarmup] = useState(false);
+            const [warmupHand, setWarmupHand] = useState('right');
 
-            // ユーザーが選ばれていない時は、ローカルのプロフィール選択画面を表示
-            if (!currentUser) return <ProfileSelect onSelect={setCurrentUser} />;
-            
-            // ログアウトボタンで currentUser を null に戻し、選択画面へ遷移させる
+            const handleSelectUser = async (user) => {
+                const saved = await db.settings.get(user.id);
+                const warmupEnabled = saved?.warmupEnabled !== false;
+                setWarmupHand(saved?.hand || 'right');
+                setCurrentUser(user);
+                if (warmupEnabled) setShowWarmup(true);
+            };
+
+            if (!currentUser) return <ProfileSelect onSelect={handleSelectUser} />;
+            if (showWarmup) return <WarmupScreen hand={warmupHand} bgColor="#fdfbf7" onComplete={() => setShowWarmup(false)} />;
             return <MainApp currentUser={currentUser} onLogout={() => setCurrentUser(null)} />;
         }
 
