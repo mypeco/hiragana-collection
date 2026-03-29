@@ -176,7 +176,8 @@
             { label: 'Teal', class: 'bg-teal-100 text-teal-700', border: 'border-teal-300', bg: 'bg-teal-500' }
         ];
 
-        const PART_COLORS = ['#0284c7', '#16a34a', '#ea580c', '#9333ea', '#e11d48', '#ca8a04', '#0d9488', '#2563eb'];
+        const PART_COLORS   = ['#0284c7', '#16a34a', '#ea580c', '#9333ea', '#e11d48', '#ca8a04', '#0d9488', '#2563eb'];
+        const PASTEL_COLORS = ['#7BB8E8', '#82C9A0', '#F0A878', '#BF9FE0', '#F08898', '#E8CC78', '#7BCEC8', '#8AABE8'];
         const ICON_OPTIONS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🐨', '🐯', '🦁', '🚗', '🚀', '✈️', '🚂', '🚓', '🚑', '⚽', '⚾', '🏀', '🎾', '🍎', '🍓', '🍒', '🍇', '🍉', '☀️', '🌙', '🌟', '❄️', '🌈', '👑', '💎', '🎀', '🎵'];
         const DURATION_OPTIONS = [ { val: 1, label: '1日' }, { val: 3, label: '3日' }, { val: 7, label: '1週間' }, { val: 14, label: '2週間' }, { val: 30, label: '1ヶ月' } ];
 
@@ -322,7 +323,7 @@
             } catch (error) { return null; }
         };
 
-        const KanaPath = ({ d, status, strokeWidth = "5", drawnColor = "#1f2937" }) => {
+        const KanaPath = ({ d, status, strokeWidth = "5", drawnColor = "#1f2937", filter, animatingColor = '#f97316', animDuration, pathOpacity }) => {
             const pathRef = useRef(null);
             const [length, setLength] = useState(200); 
 
@@ -335,59 +336,120 @@
 
             const dynamicStyle = { '--path-length': length, strokeDasharray: length };
             if (status !== 'animating') dynamicStyle.strokeDashoffset = status === 'drawn' ? 0 : length;
+            // animDurationが指定されている場合はインラインスタイルでCSSクラスを上書き
+            if (status === 'animating' && animDuration) dynamicStyle.animation = `draw ${animDuration}ms ease-out forwards`;
+            if (pathOpacity !== undefined) dynamicStyle.opacity = pathOpacity;
             
             let strokeColor = 'transparent';
             if (status === 'drawn') strokeColor = drawnColor;
-            if (status === 'animating') strokeColor = '#f97316'; 
+            if (status === 'animating') strokeColor = animatingColor; 
 
-            return <path ref={pathRef} d={d} className={`stroke-path ${status === 'animating' ? 'stroke-animating' : ''}`} stroke={strokeColor} strokeWidth={strokeWidth} style={dynamicStyle} />;
+            return <path ref={pathRef} d={d} filter={filter} className={`stroke-path ${status === 'animating' ? 'stroke-animating' : ''}`} stroke={strokeColor} strokeWidth={strokeWidth} style={dynamicStyle} />;
         };
 
-        const AnimatedKana = ({ paths, strokes, multiColor, onComplete, isKogaki, trickyStroke, playRef, onStatusChange }) => {
+        const AnimatedKana = ({ paths, strokes, settings, onComplete, isKogaki, trickyStroke, playRef, onStatusChange, onStrokeChange }) => {
             const [status, setStatus] = useState('idle');
             const [currentStroke, setCurrentStroke] = useState(-1);
+
+            // ── みため設定の読み取り ──
+            const visualStyle   = settings?.visualStyle  || 'flat';
+            const strokeColor   = settings?.strokeColor  || 'mono';
+            const partColor     = settings?.partColor    ?? true;
+            const animSpeed     = settings?.animSpeed    ?? 1300;
+            const isHaptic      = visualStyle === 'haptic' || visualStyle === 'haptic-dark';
+            const isDark        = visualStyle === 'haptic-dark';
+            const monoColor     = isDark ? '#e8e4d8' : '#1f2937';
+
+            const getStrokeColor = (groupId) => {
+                if (strokeColor === 'multi')
+                    return partColor ? PART_COLORS[groupId % PART_COLORS.length] : monoColor;
+                if (strokeColor === 'pastel')
+                    return PASTEL_COLORS[groupId % PASTEL_COLORS.length];
+                if (strokeColor === 'single')
+                    return '#378ADD';
+                // mono
+                return (partColor) ? PART_COLORS[groupId % PART_COLORS.length] : monoColor;
+            };
             
             const play = () => { 
                 if (status !== 'playing') { setStatus('playing'); setCurrentStroke(0); } 
             };
             
-            // playRefに常に最新のplay関数を格納（親から呼び出せるように）
             useEffect(() => { if (playRef) playRef.current = play; });
-            // statusが変わるたびに親へ通知
             useEffect(() => { if (onStatusChange) onStatusChange(status); }, [status]);
-            
+            // ストローク番号を親に通知
+            useEffect(() => { if (onStrokeChange) onStrokeChange(currentStroke); }, [currentStroke]);
             useEffect(() => { setStatus('idle'); setCurrentStroke(-1); }, [paths]);
+
+            // onComplete は毎レンダリングで新参照になるため ref で安定させる（app.js と同じ）
+            const onCompleteRef = useRef(onComplete);
+            useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+
+            // playTrigger が増えたら再生開始（プレビュー用）
+            const playTrigger = settings?._playTrigger ?? 0;
+            const prevPlayTriggerRef = useRef(0);
+            useEffect(() => {
+                if (playTrigger > prevPlayTriggerRef.current) {
+                    prevPlayTriggerRef.current = playTrigger;
+                    setStatus('playing');
+                    setCurrentStroke(0);
+                }
+            }, [playTrigger]);
             
             useEffect(() => {
                 if (status === 'playing') {
                     if (currentStroke < paths.length) {
-                        const timer = setTimeout(() => setCurrentStroke(prev => prev + 1), 1300); 
+                        const timer = setTimeout(() => setCurrentStroke(prev => prev + 1), animSpeed); 
                         return () => clearTimeout(timer);
                     } else {
                         setStatus('done');
-                        if (onComplete) onComplete();
+                        if (onCompleteRef.current) onCompleteRef.current();
                         const resetTimer = setTimeout(() => { setStatus('idle'); setCurrentStroke(-1); }, 2000); 
                         return () => clearTimeout(resetTimer);
                     }
                 }
-            }, [status, currentStroke, paths.length, onComplete]);
+            }, [status, currentStroke, paths.length, animSpeed]);  // onComplete を deps から除外
 
-            // ボタンは親(PracticeStudio)のモードボタン行に移動。ここはボックスのみ返す。
+            // ガイドレイヤーの透明度
+            const glo = settings?.guideLayerOpacity || 'soft';
+            const glOpacity = glo === 'none' ? '0' : glo === 'strong' ? '0.55' : '0.3';
+            // haptic再生中はガイドレイヤー非表示（app.jsと同じ仕様）
+            const showGuideLayer = !(isHaptic && status === 'playing') && glo !== 'none';
+
+            // アニメーション中の色
+            const animatingColor = (strokeColor === 'mono' && isHaptic) ? monoColor : '#f97316';
+
             return (
-                <div className="w-full h-full bg-white rounded-xl shadow-md border-4 border-orange-200 flex items-center justify-center relative p-0">
-                    <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
-                        <div className="absolute top-1/2 w-full border-t-2 border-dashed border-red-300"></div>
-                        <div className="absolute left-1/2 h-full border-l-2 border-dashed border-red-300"></div>
-                    </div>
-                    <span className="absolute top-1 left-1 text-[10px] text-red-500 bg-white px-1 rounded border border-red-200 z-20 font-bold">{strokes}かく</span>
+                <div className={`w-full h-full rounded-xl shadow-md border-4 flex items-center justify-center relative p-0 ${isDark ? 'bg-[#111110] border-stone-700' : 'bg-white border-orange-200'}`}>
+                    {settings?.showExampleCross !== false && (
+                        <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
+                            <div className={`absolute top-1/2 w-full border-t-2 border-dashed ${isDark ? 'border-stone-600' : 'border-red-300'}`}></div>
+                            <div className={`absolute left-1/2 h-full border-l-2 border-dashed ${isDark ? 'border-stone-600' : 'border-red-300'}`}></div>
+                        </div>
+                    )}
+                    <span className={`absolute top-1 left-1 text-[10px] px-1 rounded border z-20 font-bold ${isDark ? 'text-stone-400 bg-stone-800 border-stone-600' : 'text-red-500 bg-white border-red-200'}`}>{strokes}かく</span>
                     
                     <div className={isKogaki ? "absolute z-10" : "absolute inset-0 z-10"} style={isKogaki ? {left:'-8%', bottom:'0%', width:'66%', height:'66%'} : {}}>
                         <svg viewBox="4 4 101 101" className="w-full h-full">
-                            {paths.map((p, i) => (
-                                <path key={`guide-${i}`} d={p.d} className="stroke-path" strokeWidth="6" 
-                                      stroke={multiColor ? PART_COLORS[p.groupId % PART_COLORS.length] : '#e5e7eb'} 
-                                      opacity={multiColor ? "0.3" : "1"} />
+                            {isHaptic && (
+                                <defs>
+                                    <filter id="hapticF" x="-60%" y="-60%" width="220%" height="220%" colorInterpolationFilters="sRGB">
+                                        <feGaussianBlur in="SourceAlpha" stdDeviation="4.5" result="blur"/>
+                                        <feSpecularLighting in="blur" surfaceScale="2" specularConstant="1.4" specularExponent="30" lightingColor="white" result="spec">
+                                            <feDistantLight azimuth="230" elevation="62"/>
+                                        </feSpecularLighting>
+                                        <feComposite in="spec" in2="SourceAlpha" operator="in" result="specOut"/>
+                                        <feBlend in="SourceGraphic" in2="specOut" mode="screen"/>
+                                    </filter>
+                                </defs>
+                            )}
+                            {/* ガイドレイヤー */}
+                            {showGuideLayer && paths.map((p, i) => (
+                                <path key={`guide-${i}`} d={p.d} className="stroke-path" strokeWidth="6"
+                                      stroke={getStrokeColor(p.groupId)}
+                                      opacity={glOpacity} />
                             ))}
+                            {/* 筆順アニメーション */}
                             {paths.map((p, i) => {
                                 let pathStatus = 'undrawn';
                                 if (status === 'idle' || status === 'done') pathStatus = 'drawn';
@@ -395,12 +457,225 @@
                                     if (i < currentStroke) pathStatus = 'drawn';
                                     else if (i === currentStroke) pathStatus = 'animating';
                                 }
-                                const drawnColor = multiColor ? PART_COLORS[p.groupId % PART_COLORS.length] : '#1f2937';
-                                return <KanaPath key={`stroke-${i}`} d={p.d} status={pathStatus} strokeWidth="5" drawnColor={drawnColor} />;
+                                const drawnColor = getStrokeColor(p.groupId);
+                                const strokeW = isHaptic ? (pathStatus === 'animating' ? '7' : '6') : '5';
+                                return <KanaPath key={`stroke-${i}`} d={p.d} status={pathStatus} strokeWidth={strokeW} drawnColor={drawnColor} filter={isHaptic ? 'url(#hapticF)' : undefined} animatingColor={animatingColor} animDuration={animSpeed} />;
                             })}
                         </svg>
                     </div>
                 </div>
+            );
+        };
+
+        // ── みため設定サイドバー ──────────────────────────────────────────
+        const SettingsSidebar = ({ settings, onSave, onClose, svgPaths, targetKanji }) => {
+            const [local, setLocal] = useState({ ...settings });
+            const [previewTrigger, setPreviewTrigger] = useState(0);
+
+            const set = (key, val) => {
+                let next = { ...local, [key]: val };
+                // partColor変更時にstrokeColorを自動補正
+                if (key === 'partColor') {
+                    if (val === true  && (next.strokeColor === 'mono' || next.strokeColor === 'single')) next.strokeColor = 'multi';
+                    if (val === false && (next.strokeColor === 'multi' || next.strokeColor === 'pastel')) next.strokeColor = 'mono';
+                }
+                setLocal(next);
+                onSave(next);
+            };
+
+            const isHaptic = local.visualStyle === 'haptic' || local.visualStyle === 'haptic-dark';
+
+            const strokeOptions = local.partColor
+                ? [
+                    { id: 'multi',  label: 'カラフル', emoji: '🌈' },
+                    { id: 'pastel', label: 'パステル',  emoji: '🌸' },
+                  ]
+                : [
+                    { id: 'mono',   label: 'しろくろ',   emoji: '⬛' },
+                    { id: 'single', label: 'いっしょく', emoji: '🔵' },
+                  ];
+
+            const speedLabel = (v) =>
+                v <= 500 ? 'はやい' : v <= 900 ? 'ちょっとはやい' : v <= 1400 ? 'ふつう' : v <= 2000 ? 'ゆっくり' : 'とてもゆっくり';
+
+            const Row = ({ label, children }) => (
+                <div className="mb-3">
+                    <div className="text-xs text-stone-500 mb-1.5">{label}</div>
+                    {children}
+                </div>
+            );
+
+            const BtnGroup = ({ options, current, onSelect, cols = 3 }) => (
+                <div className={`grid gap-1.5 grid-cols-${cols}`}>
+                    {options.map(opt => (
+                        <button key={String(opt.id ?? opt.val)} onClick={() => onSelect(opt.id ?? opt.val)}
+                            className={`py-2 rounded-lg border-2 text-xs font-bold transition-all flex items-center justify-center gap-1
+                                ${current === (opt.id ?? opt.val)
+                                    ? 'border-sky-400 bg-sky-50 text-sky-700'
+                                    : 'border-stone-100 bg-stone-50 text-stone-500'}`}>
+                            {opt.emoji && <span>{opt.emoji}</span>}
+                            <span>{opt.label}</span>
+                        </button>
+                    ))}
+                </div>
+            );
+
+            return (
+                <>
+                    <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose}/>
+                    <div className="fixed top-0 right-0 h-full w-72 bg-white z-50 shadow-2xl flex flex-col">
+                        {/* ヘッダー */}
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100 shrink-0">
+                            <span className="font-bold text-stone-700 text-sm">👁 みため・せってい</span>
+                            <button onClick={onClose}
+                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 text-stone-400 font-bold text-xl leading-none">×</button>
+                        </div>
+
+                        {/* スクロールコンテンツ */}
+                        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
+
+                            <Row label="👁 見た目">
+                                <BtnGroup cols={3} current={local.visualStyle || 'flat'} onSelect={v => set('visualStyle', v)}
+                                    options={[
+                                        { id: 'flat',        emoji: '📄', label: 'ふつう' },
+                                        { id: 'haptic',      emoji: '✨', label: 'ぷっくり' },
+                                        { id: 'haptic-dark', emoji: '🌙', label: 'ぷっくり黒' },
+                                    ]}/>
+                            </Row>
+
+                            <Row label="🌈 部品の色分け">
+                                <BtnGroup cols={2} current={local.partColor} onSelect={v => set('partColor', v)}
+                                    options={[
+                                        { id: true,  label: 'あり' },
+                                        { id: false, label: 'なし' },
+                                    ]}/>
+                            </Row>
+
+                            <Row label="🎨 色">
+                                <div className="flex gap-1.5 flex-wrap">
+                                    {strokeOptions.map(opt => (
+                                        <button key={opt.id} onClick={() => set('strokeColor', opt.id)}
+                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border-2 text-xs font-bold transition-all
+                                                ${local.strokeColor === opt.id
+                                                    ? 'border-sky-400 bg-sky-50 text-sky-700'
+                                                    : 'border-stone-100 bg-stone-50 text-stone-500'}`}>
+                                            <span>{opt.emoji}</span><span>{opt.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </Row>
+
+                            <div className={`mb-3 transition-opacity ${isHaptic ? 'opacity-30 pointer-events-none' : ''}`}>
+                                <div className="text-xs text-stone-500 mb-1.5">
+                                    📋 おてほん 下レイヤー
+                                    {isHaptic && <span className="ml-1 text-[10px] text-stone-400">（ぷっくり時は非表示）</span>}
+                                </div>
+                                <BtnGroup cols={3} current={local.guideLayerOpacity || 'soft'} onSelect={v => set('guideLayerOpacity', v)}
+                                    options={[
+                                        { id: 'none',   label: 'なし' },
+                                        { id: 'soft',   label: 'うっすら' },
+                                        { id: 'strong', label: 'しっかり' },
+                                    ]}/>
+                            </div>
+
+                            <Row label={`⏱ ふでの速さ　${speedLabel(local.animSpeed ?? 1300)}`}>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm">🐇</span>
+                                    <input type="range" min="300" max="2500" step="100" value={local.animSpeed ?? 1300}
+                                        onChange={e => set('animSpeed', parseInt(e.target.value))}
+                                        className="flex-1"/>
+                                    <span className="text-sm">🐢</span>
+                                </div>
+                            </Row>
+
+                            {/* ── プレビュー ── */}
+                            {svgPaths && targetKanji && (
+                                <div className="mb-3">
+                                    <div className="text-xs text-stone-500 mb-1.5">▶ さいせいしてみる</div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-20 h-20 shrink-0">
+                                            <AnimatedKana
+                                                paths={svgPaths}
+                                                strokes={targetKanji.strokes}
+                                                settings={{ ...local, _playTrigger: previewTrigger }}
+                                                onComplete={() => {}}
+                                                isKogaki={['ゃ','ゅ','ょ','っ'].includes(targetKanji.char)}
+                                                trickyStroke={targetKanji.trickyStroke}
+                                                onStatusChange={() => {}}
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => setPreviewTrigger(t => t + 1)}
+                                            className="flex-1 py-2 rounded-xl bg-sky-500 text-white text-xs font-bold shadow-sm active:scale-95 hover:bg-sky-600 transition-all"
+                                        >
+                                            ▶ さいせい
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <Row label="🔗 なぞりも同期して描画">
+                                <BtnGroup cols={2} current={local.syncTrace ?? false} onSelect={v => set('syncTrace', v)}
+                                    options={[
+                                        { id: true,  label: 'する' },
+                                        { id: false, label: 'しない' },
+                                    ]}/>
+                            </Row>
+
+                            <Row label="➕ 十字線">
+                                <div className="space-y-1.5">
+                                    {[
+                                        { key: 'showExampleCross', label: 'おてほん' },
+                                        { key: 'showCanvasCross',  label: 'キャンバス' },
+                                    ].map(({ key, label }) => {
+                                        const on = local[key] !== false;
+                                        return (
+                                            <button key={key}
+                                                onClick={() => set(key, !on)}
+                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border-2 text-xs font-bold transition-all
+                                                    ${on ? 'border-sky-400 bg-sky-50 text-sky-700' : 'border-stone-100 bg-stone-50 text-stone-400'}`}>
+                                                <span>{label}</span>
+                                                <span>{on ? 'あり ✓' : 'なし'}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </Row>
+
+                            <div className="border-t border-stone-100 my-1"/>
+
+                            {/* ── れんしゅう ── */}
+                            <div className="text-[10px] font-bold text-stone-400 tracking-widest mb-2 uppercase">れんしゅう</div>
+
+                            <Row label="📝 なぞりガイドのこさ">
+                                <BtnGroup cols={3} current={local.guideOpacity || 'soft'} onSelect={v => set('guideOpacity', v)}
+                                    options={[
+                                        { id: 'none',   label: 'なし' },
+                                        { id: 'soft',   label: 'うっすら' },
+                                        { id: 'strong', label: 'しっかり' },
+                                    ]}/>
+                            </Row>
+
+                            <Row label="✏️ なぞりの太さ">
+                                <BtnGroup cols={3} current={local.traceWidth ?? 6} onSelect={v => set('traceWidth', v)}
+                                    options={[
+                                        { id: 3,  label: 'ほそい' },
+                                        { id: 6,  label: 'ふつう' },
+                                        { id: 10, label: 'ふとい' },
+                                    ]}/>
+                            </Row>
+
+                            <Row label="📐 キャンバスの大きさ">
+                                <BtnGroup cols={3} current={local.canvasSize ?? 'medium'} onSelect={v => set('canvasSize', v)}
+                                    options={[
+                                        { id: 'small',  label: 'ちいさい' },
+                                        { id: 'medium', label: 'ふつう' },
+                                        { id: 'large',  label: 'おおきい' },
+                                    ]}/>
+                            </Row>
+                        </div>
+                    </div>
+                </>
             );
         };
 
@@ -570,62 +845,6 @@
                                 </div>
                             </div>
 
-                            <div className="bg-sky-50 p-4 rounded-xl border border-sky-200 shadow-sm">
-                                <h3 className="font-bold text-lg mb-1 text-sky-800 flex items-center gap-1">✏️ なぞりがきのガイド線の太さ</h3>
-                                <p className="text-xs text-sky-600 mb-3">「なぞり」モードでうっすら見えるガイドの線の太さを選べます。</p>
-                                <div className="flex gap-2 flex-wrap items-end">
-                                    {[
-                                        { val: 3,  label: 'ほそい', preview: 3 },
-                                        { val: 6,  label: 'ふつう', preview: 6 },
-                                        { val: 10, label: 'ふとい', preview: 10 },
-                                    ].map(opt => {
-                                        const isActive = (settings.traceWidth ?? 6) === opt.val;
-                                        return (
-                                            <button key={opt.val}
-                                                onClick={() => saveSettings({...settings, traceWidth: opt.val})}
-                                                className={`flex flex-col items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all ${isActive ? 'border-sky-500 bg-sky-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600 hover:border-sky-300'}`}
-                                            >
-                                                <svg width="48" height="20" viewBox="0 0 48 20">
-                                                    <path d="M4 10 Q12 2, 24 10 Q36 18, 44 10" fill="none"
-                                                        stroke={isActive ? 'white' : '#38bdf8'}
-                                                        strokeWidth={opt.preview}
-                                                        strokeLinecap="round"
-                                                        opacity="0.8"
-                                                    />
-                                                </svg>
-                                                <span className="text-xs font-bold">{opt.label}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* キャンバスサイズ設定 */}
-                            <div className="bg-orange-50 p-4 rounded-xl border border-orange-200 shadow-sm">
-                                <h3 className="font-bold text-lg mb-1 text-orange-800 flex items-center gap-1">📐 れんしゅうキャンバスの大きさ</h3>
-                                <p className="text-xs text-orange-600 mb-3">かく場所の大きさをえらべます。「ふつう」がおすすめです。</p>
-                                <div className="flex gap-2">
-                                    {[
-                                        { val: 'small',  label: 'ちいさい', canvasW: 18, refW: 13 },
-                                        { val: 'medium', label: 'ふつう',   canvasW: 26, refW: 18 },
-                                        { val: 'large',  label: 'おおきい', canvasW: 34, refW: 24 },
-                                    ].map(opt => {
-                                        const isActive = (settings.canvasSize ?? 'medium') === opt.val;
-                                        return (
-                                            <button key={opt.val}
-                                                onClick={() => saveSettings({...settings, canvasSize: opt.val})}
-                                                className={`flex flex-col items-center gap-2 px-3 py-3 rounded-xl border-2 flex-1 transition-all ${isActive ? 'border-orange-500 bg-orange-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600 hover:border-orange-300'}`}
-                                            >
-                                                <div className="flex items-end gap-1.5 h-10 justify-center">
-                                                    <div className="rounded border-2 border-current" style={{width:`${opt.canvasW}px`, height:`${opt.canvasW}px`}}></div>
-                                                </div>
-                                                <span className="text-xs font-bold">{opt.label}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
                             {/* 4段階の目標設定 */}
                             <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm">
                                 <h3 className="font-bold text-lg mb-1 text-indigo-800 flex items-center gap-2">🎯 れんしゅうの ながれ</h3>
@@ -767,8 +986,10 @@
             );
         };
 
-        const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onSaveBest, onSaveComplete, onOpenAdmin, onToggleSound, onToggleVoice }) => {
+        const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onSaveBest, onSaveComplete, onOpenAdmin, onToggleSound, onToggleVoice, onSaveSettings }) => {
             const [isGuideWatched, setIsGuideWatched] = useState(false);
+            const [showSidebar, setShowSidebar] = useState(false);
+            const [syncStrokeIndex, setSyncStrokeIndex] = useState(-1);
             const hand = settings.hand || 'right'; 
             const isKogaki = ['ゃ','ゅ','ょ','っ'].includes(targetKanji.char);
 
@@ -1139,6 +1360,7 @@
                                "えらべるよ！";
 
             return (
+                <>
                 <div className="flex flex-col h-screen w-full max-w-4xl mx-auto bg-[#fdfbf7] overflow-hidden">
                     <div className="pt-3 pb-2 flex flex-col items-center z-10 shrink-0 transition-colors duration-500">
                         
@@ -1192,6 +1414,13 @@
                                     className="flex items-center justify-center text-xl bg-white w-10 h-10 rounded-full hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all leading-none"
                                 >
                                     {settings.voiceEnabled !== false ? '🔊' : '🔇'}
+                                </button>
+                                <button
+                                    onClick={() => setShowSidebar(true)}
+                                    title="みためをかえる"
+                                    className="flex items-center justify-center text-xl bg-white w-10 h-10 rounded-full hover:bg-amber-50 border border-stone-200 shadow-sm active:scale-95 transition-all leading-none"
+                                >
+                                    👁
                                 </button>
                             </div>
                         </div>
@@ -1339,7 +1568,7 @@
                 <Loader className="w-8 h-8 mb-2" />
             </div>
         ) : svgPaths ? (
-            <AnimatedKana paths={svgPaths} strokes={targetKanji.strokes} multiColor={settings.partColor} onComplete={() => setIsGuideWatched(true)} isKogaki={['ゃ','ゅ','ょ','っ'].includes(targetKanji.char)} trickyStroke={targetKanji.trickyStroke} playRef={kanaPlayRef} onStatusChange={setKanaStatus} />
+            <AnimatedKana paths={svgPaths} strokes={targetKanji.strokes} settings={settings} onComplete={() => setIsGuideWatched(true)} isKogaki={['ゃ','ゅ','ょ','っ'].includes(targetKanji.char)} trickyStroke={targetKanji.trickyStroke} playRef={kanaPlayRef} onStatusChange={setKanaStatus} onStrokeChange={setSyncStrokeIndex} />
         ) : (
             <div className="w-full h-full bg-white rounded-xl shadow-md border-4 border-orange-200 relative select-none">
                 <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
@@ -1383,14 +1612,45 @@
                                 {/* モードボタンは上の独立行に移動済み。ここには何も追加しない */}
 
                                 <div className="relative w-full aspect-square bg-white rounded-2xl shadow-xl border-4 overflow-hidden cursor-crosshair transition-colors duration-300" style={{ borderColor: borderColor }}>
-                                    {(practiceMode === 'traceAll' || practiceMode === 'trace') && svgPaths && (
+                                    {(practiceMode === 'traceAll' || practiceMode === 'trace') && svgPaths && (() => {
+    const go = settings.guideOpacity || 'soft';
+    if (go === 'none') return null;
+    const op = go === 'strong' ? 0.55 : 0.30;
+    const isSyncing = settings.syncTrace && kanaStatus === 'playing';
+    return (
     <div className={isKogaki ? "absolute pointer-events-none select-none z-0" : "absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 p-4"}
          style={isKogaki ? {left:'-8%', bottom:'0%', width:'66%', height:'66%'} : {}}>
-        <svg viewBox={isKogaki ? "4 4 101 101" : "0 0 109 109"} className="w-full h-full opacity-30">
-            {svgPaths.map((p, i) => <path key={i} d={p.d} fill="none" strokeWidth={settings.traceWidth ?? 6} stroke={settings.partColor ? PART_COLORS[p.groupId % PART_COLORS.length] : '#e5e7eb'} opacity={settings.partColor ? "0.4" : "1"} strokeLinecap="round" strokeLinejoin="round" />)}
+        <svg viewBox={isKogaki ? "4 4 101 101" : "0 0 109 109"} className="w-full h-full" style={{opacity: op}}>
+            {svgPaths.map((p, i) => {
+                const sc = settings.strokeColor || 'mono';
+                const pc = settings.partColor ?? true;
+                const guideColor = sc === 'pastel' ? PASTEL_COLORS[p.groupId % PASTEL_COLORS.length]
+                    : sc === 'single' ? '#378ADD'
+                    : pc ? PART_COLORS[p.groupId % PART_COLORS.length] : '#e5e7eb';
+                const baseOpacity = (pc || sc === 'pastel' || sc === 'single') ? 0.4 : 1;
+                if (isSyncing) {
+                    // 同期モード：KanaPathでおてほんと同じタイミングでアニメーション描画
+                    let pathStatus = 'undrawn';
+                    if (i < syncStrokeIndex) pathStatus = 'drawn';
+                    else if (i === syncStrokeIndex) pathStatus = 'animating';
+                    if (pathStatus === 'undrawn') return null;
+                    return <KanaPath
+                        key={i}
+                        d={p.d}
+                        status={pathStatus}
+                        strokeWidth={settings.traceWidth ?? 6}
+                        drawnColor={guideColor}
+                        animatingColor={guideColor}
+                        animDuration={settings.animSpeed ?? 1300}
+                        pathOpacity={baseOpacity}
+                    />;
+                }
+                return <path key={i} d={p.d} fill="none" strokeWidth={settings.traceWidth ?? 6} stroke={guideColor} opacity={baseOpacity} strokeLinecap="round" strokeLinejoin="round" />;
+            })}
         </svg>
     </div>
-)}
+    );
+})()}
 
 {(practiceMode === 'ten' || practiceMode === 'hint') && svgPaths && (() => {
     const firstPath = svgPaths[0];
@@ -1407,10 +1667,12 @@
     );
 })()}
 
+                                    {settings.showCanvasCross !== false && (
                                     <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
                                         <div className="absolute top-1/2 w-full border-t-2 border-dashed border-red-300"></div>
                                         <div className="absolute left-1/2 h-full border-l-2 border-dashed border-red-300"></div>
                                     </div>
+                                    )}
                                     <canvas ref={canvasRef} className="absolute inset-0 w-full h-full touch-none z-10" onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={move} onTouchEnd={end} />
                                     
                                     {isCanvasLocked && (
@@ -1507,6 +1769,16 @@
                         </div>{/* mt-auto wrapper end */}
                     </div>
                 </div>
+                {showSidebar && (
+                    <SettingsSidebar
+                        settings={settings}
+                        onSave={onSaveSettings}
+                        onClose={() => setShowSidebar(false)}
+                        svgPaths={svgPaths}
+                        targetKanji={targetKanji}
+                    />
+                )}
+                </>
             );
         };
 
@@ -2201,7 +2473,7 @@
             const [bestShots, setBestShots] = useState({});
             
             // 4段階設定のデフォルト値
-            const [settings, setSettings] = useState({ warmupEnabled: true, traceColor: 'red', tenColor: 'green', blankColor: 'sky', testColor: 'purple', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [], soundEnabled: true, voiceEnabled: true, traceAllTarget: 1, tenTarget: 1, blankTarget: 1, testTarget: 1 });
+            const [settings, setSettings] = useState({ warmupEnabled: true, traceColor: 'red', tenColor: 'green', blankColor: 'sky', testColor: 'purple', newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [], soundEnabled: true, voiceEnabled: true, traceAllTarget: 1, tenTarget: 1, blankTarget: 1, testTarget: 1, visualStyle: 'flat', animSpeed: 1300, strokeColor: 'mono', guideOpacity: 'soft', guideLayerOpacity: 'soft', showExampleCross: true, showCanvasCross: true, syncTrace: false });
             
             const [newWordAlert, setNewWordAlert] = useState(null);
             const [wordRegisterTarget, setWordRegisterTarget] = useState(null);
@@ -2608,7 +2880,7 @@
             };
 
             if (view === 'admin') return <AdminScreen onBack={() => setView('grid')} settings={settings} saveSettings={saveSettingsWrapper} />;
-            if (view === 'practice') return <PracticeStudio currentUser={currentUser} targetKanji={selectedKanji} settings={settings} onBack={() => setView('grid')} onSaveBest={saveBestShot} onSaveComplete={handleSaveComplete} onOpenAdmin={() => setView('admin')} onToggleSound={() => saveSettingsWrapper({...settings, soundEnabled: !(settings.soundEnabled !== false)})} onToggleVoice={() => saveSettingsWrapper({...settings, voiceEnabled: !(settings.voiceEnabled !== false)})} />;
+            if (view === 'practice') return <PracticeStudio currentUser={currentUser} targetKanji={selectedKanji} settings={settings} onBack={() => setView('grid')} onSaveBest={saveBestShot} onSaveComplete={handleSaveComplete} onOpenAdmin={() => setView('admin')} onToggleSound={() => saveSettingsWrapper({...settings, soundEnabled: !(settings.soundEnabled !== false)})} onToggleVoice={() => saveSettingsWrapper({...settings, voiceEnabled: !(settings.voiceEnabled !== false)})} onSaveSettings={saveSettingsWrapper} />;
 
             const unlockedWords = getUnlockedWords(bestShots);
             const unreadCount = unlockedWords.filter(w => !readWords.includes(w.id)).length;
