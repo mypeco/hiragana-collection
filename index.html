@@ -724,6 +724,47 @@
                 }
             };
 
+            // ──────────────────────────────────────────────────────────────
+            // インポートデータのバリデーション
+            // 「version/users/settingsキーの有無」だけでは不十分（不正な形式の
+            // データがそのままDBに書き込まれてしまうため）、各テーブルの中身が
+            // 配列であること、各要素が必要最低限のキーを持つオブジェクトである
+            // ことまで確認する。
+            // ──────────────────────────────────────────────────────────────
+            const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+            const validateTable = (arr, tableLabel, requiredKeys) => {
+                if (!Array.isArray(arr)) {
+                    throw new Error(`「${tableLabel}」のデータ形式が正しくありません。`);
+                }
+                for (const item of arr) {
+                    if (!isPlainObject(item)) {
+                        throw new Error(`「${tableLabel}」に不正なデータが含まれています。`);
+                    }
+                    for (const key of requiredKeys) {
+                        if (!(key in item)) {
+                            throw new Error(`「${tableLabel}」のデータに必要な項目（${key}）がありません。`);
+                        }
+                    }
+                }
+            };
+
+            const validateBackupData = (data) => {
+                if (!isPlainObject(data) || !data.version || !Array.isArray(data.users) || !Array.isArray(data.settings)) {
+                    return { ok: false, reason: '正しいファイルを選んでね。' };
+                }
+                try {
+                    validateTable(data.users, 'users', ['name', 'icon', 'color']);
+                    validateTable(data.settings, 'settings', ['userId']);
+                    if (data.practices !== undefined) validateTable(data.practices, 'practices', ['userId', 'char']);
+                    if (data.bestShots !== undefined) validateTable(data.bestShots, 'bestShots', ['userId', 'char']);
+                    if (data.readWords !== undefined) validateTable(data.readWords, 'readWords', ['userId', 'wordId']);
+                } catch (err) {
+                    return { ok: false, reason: err.message };
+                }
+                return { ok: true };
+            };
+
             const handleImport = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -737,8 +778,10 @@
                 reader.onload = async (event) => {
                     try {
                         const data = JSON.parse(event.target.result);
-                        if (!data.version || !data.users || !data.settings) {
-                            alert("正しいファイルを選んでね。");
+
+                        const validation = validateBackupData(data);
+                        if (!validation.ok) {
+                            alert(validation.reason);
                             return;
                         }
 
