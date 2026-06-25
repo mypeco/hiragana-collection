@@ -455,12 +455,12 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
   };
 
   const modeLabelOf = (type) => {
-    if (type === 'traceAll' || type === 'trace') return 'なぞり';
-    if (type === 'traceBlue') return 'いちぶ';
-    if (type === 'ten' || type === 'hint') return 'てん';
-    if (type === 'blank') return 'おてほん';
-    if (type === 'traceBlueHidden') return 'いちぶ🙈';
-    if (type === 'test') return 'みないで';
+    if (type === 'traceAll' || type === 'trace') return '✏️ぜんぶ';
+    if (type === 'traceBlue') return '🟦いちぶ';
+    if (type === 'ten' || type === 'hint') return '⚫️てん';
+    if (type === 'blank') return '👁️おてほん';
+    if (type === 'traceBlueHidden') return '🟦🙈いちぶ';
+    if (type === 'test') return '🙈ぜんぶ';
     return type;
   };
 
@@ -601,12 +601,12 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
           <div className="flex justify-center mb-2 overflow-x-auto">
             <div className="flex bg-white rounded-full shadow-sm border p-0.5 overflow-hidden">
               {[
-                traceAllTarget        > 0 ? { mode: 'traceAll',        label: '✏️なぞり',   theme: traceTheme      } : null,
-                traceBlueTarget       > 0 ? { mode: 'traceBlue',       label: '🟦いちぶ',   theme: traceBlueTheme  } : null,
-                tenTarget             > 0 ? { mode: 'ten',             label: '⚫️てん',     theme: tenTheme        } : null,
-                blankTarget           > 0 ? { mode: 'blank',           label: '👁️おてほん', theme: blankTheme      } : null,
-                traceBlueHiddenTarget > 0 ? { mode: 'traceBlueHidden', label: '🟦🙈',       theme: traceBlueHiddenTheme } : null,
-                testTarget            > 0 ? { mode: 'test',            label: '🙈みないで', theme: testTheme       } : null,
+                traceAllTarget        > 0 ? { mode: 'traceAll',        label: '✏️ぜんぶ',   theme: traceTheme           } : null,
+                traceBlueTarget       > 0 ? { mode: 'traceBlue',       label: '🟦いちぶ',   theme: traceBlueTheme       } : null,
+                tenTarget             > 0 ? { mode: 'ten',             label: '⚫️てん',     theme: tenTheme             } : null,
+                blankTarget           > 0 ? { mode: 'blank',           label: '👁️おてほん', theme: blankTheme           } : null,
+                traceBlueHiddenTarget > 0 ? { mode: 'traceBlueHidden', label: '🟦🙈いちぶ', theme: traceBlueHiddenTheme } : null,
+                testTarget            > 0 ? { mode: 'test',            label: '🙈ぜんぶ',   theme: testTheme            } : null,
               ].filter(Boolean).map(({ mode, label, theme }) => (
                 <button key={mode} onClick={() => !hasDrawn && setPracticeMode(mode)} disabled={hasDrawn}
                   className={`relative px-3 py-1.5 rounded-full text-xs md:text-sm font-bold transition-all ${practiceMode !== mode ? 'text-gray-400 hover:bg-gray-50' : ''} ${hasDrawn ? 'opacity-30 cursor-not-allowed' : ''}`}

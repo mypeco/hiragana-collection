@@ -80,6 +80,10 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
   const handleImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const isMigration = window.confirm(
+      '【かくにん】\nちがうタブレットへ データをうつしますか？\n' +
+      '（「はい」をえらぶと、新しい端末用にIDを書き換えて移植します）'
+    );
     if (!window.confirm('データを読み込みます。いまのデータはすべて消えて上書きされますが、いいですか？\n（もとに戻すことはできません）')) {
       e.target.value = '';
       return;
@@ -90,6 +94,9 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
         const data = JSON.parse(event.target.result);
         const validation = validateBackupData(data);
         if (!validation.ok) { alert(validation.reason); return; }
+        if (isMigration && data.users) {
+          data.users = data.users.map(u => ({ ...u, profileId: crypto.randomUUID() }));
+        }
         await db.transaction('rw', db.users, db.settings, db.practices, db.bestShots, db.readWords, async () => {
           if (data.users)     { await db.users.clear();     await db.users.bulkPut(data.users); }
           if (data.settings)  { await db.settings.clear();  await db.settings.bulkPut(data.settings); }
@@ -97,7 +104,7 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
           if (data.bestShots) { await db.bestShots.clear(); await db.bestShots.bulkPut(data.bestShots); }
           if (data.readWords) { await db.readWords.clear(); await db.readWords.bulkPut(data.readWords); }
         });
-        alert('データのふくげんがおわりました！アプリを再起動します。');
+        alert(isMigration ? 'データの移植がおわりました！アプリを再起動します。' : 'データのふくげんがおわりました！アプリを再起動します。');
         window.location.reload();
       } catch (err) {
         console.error('インポートに失敗しました:', err);
@@ -195,13 +202,13 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
             <h3 className="font-bold text-lg mb-1 text-indigo-800 flex items-center gap-2">🎯 れんしゅうの ながれ</h3>
             <p className="text-xs text-indigo-600 mb-3">各モードの目標回数を設定します。すべてのモードが完了すると、なかから1枚えらべます。0回にするとそのモードをスキップします。</p>
             {[
-              { key: 'strokeCheckTarget',    label: '書き順確認',     emoji: '🔍', activeStyle: { borderColor: '#64748b', backgroundColor: '#f1f5f9', color: '#334155' }, defaultVal: 1, onlyZeroOrOne: true },
-              { key: 'traceAllTarget',       label: 'なぞり',          emoji: '✏️', activeStyle: { borderColor: '#0ea5e9', backgroundColor: '#e0f2fe', color: '#0369a1' }, defaultVal: 1 },
-              { key: 'traceBlueTarget',      label: 'いちぶなぞり',   emoji: '🟦', activeStyle: { borderColor: '#0284c7', backgroundColor: '#dbeafe', color: '#0c4a6e' }, defaultVal: 0 },
-              { key: 'tenTarget',            label: 'てん',            emoji: '⚫️', activeStyle: { borderColor: '#f59e0b', backgroundColor: '#fef3c7', color: '#b45309' }, defaultVal: 1 },
-              { key: 'blankTarget',          label: 'おてほん',        emoji: '👁️', activeStyle: { borderColor: '#22c55e', backgroundColor: '#dcfce7', color: '#15803d' }, defaultVal: 1 },
-              { key: 'traceBlueHiddenTarget',label: 'いちぶ🙈',        emoji: '🟦', activeStyle: { borderColor: '#7c3aed', backgroundColor: '#ede9fe', color: '#4c1d95' }, defaultVal: 0 },
-              { key: 'testTarget',           label: 'みないで',        emoji: '🙈', activeStyle: { borderColor: '#a855f7', backgroundColor: '#f3e8ff', color: '#7e22ce' }, defaultVal: 1 },
+              { key: 'strokeCheckTarget',    label: '筆順確認',  emoji: '✨',   activeStyle: { borderColor: '#f59e0b', backgroundColor: '#fffbeb', color: '#92400e' }, defaultVal: 1, onlyZeroOrOne: true },
+              { key: 'traceAllTarget',       label: 'ぜんぶ',    emoji: '✏️',   activeStyle: { borderColor: '#0ea5e9', backgroundColor: '#e0f2fe', color: '#0369a1' }, defaultVal: 1 },
+              { key: 'traceBlueTarget',      label: 'いちぶ',    emoji: '🟦',   activeStyle: { borderColor: '#3b82f6', backgroundColor: '#eff6ff', color: '#1d4ed8' }, defaultVal: 1 },
+              { key: 'tenTarget',            label: 'てん',      emoji: '⚫️',  activeStyle: { borderColor: '#f97316', backgroundColor: '#fff7ed', color: '#c2410c' }, defaultVal: 1 },
+              { key: 'blankTarget',          label: 'おてほん',  emoji: '👁️',  activeStyle: { borderColor: '#22c55e', backgroundColor: '#dcfce7', color: '#15803d' }, defaultVal: 1 },
+              { key: 'traceBlueHiddenTarget',label: 'いちぶ🙈',  emoji: '🟦🙈', activeStyle: { borderColor: '#0ea5e9', backgroundColor: '#f0f9ff', color: '#0369a1' }, defaultVal: 0 },
+              { key: 'testTarget',           label: 'ぜんぶ🙈',  emoji: '🙈',   activeStyle: { borderColor: '#a855f7', backgroundColor: '#f3e8ff', color: '#7e22ce' }, defaultVal: 1 },
             ].map(({ key, label, emoji, activeStyle, defaultVal, onlyZeroOrOne }) => (
               <div key={key} className="flex items-center gap-3 mb-2">
                 <span className="w-20 text-sm font-bold text-stone-600">{emoji} {label}</span>
@@ -246,12 +253,11 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
             <h3 className="font-bold text-lg mb-3">各モードの枠の色設定</h3>
             <div className="space-y-6">
               {[
-                { key: 'traceColor',           label: '「なぞり」モードのいろ',      fallback: 'bg-red-400' },
-                { key: 'traceBlueColor',        label: '「いちぶなぞり」モードのいろ', fallback: 'bg-sky-400' },
-                { key: 'tenColor',             label: '「てん」モードのいろ',         fallback: 'bg-orange-400' },
-                { key: 'blankColor',           label: '「おてほん」モードのいろ',     fallback: 'bg-green-400' },
-                { key: 'traceBlueHiddenColor', label: '「いちぶ🙈」モードのいろ',    fallback: 'bg-violet-400' },
-                { key: 'testColor',            label: '「みないで」モードのいろ',     fallback: 'bg-sky-400' },
+                { key: 'traceColor',     label: '「✏️ぜんぶ」モードのいろ',   fallback: 'bg-red-400'    },
+                { key: 'traceBlueColor', label: '「🟦いちぶ」モードのいろ',   fallback: 'bg-orange-400' },
+                { key: 'tenColor',       label: '「⚫️てん」モードのいろ',     fallback: 'bg-orange-400' },
+                { key: 'blankColor',     label: '「👁️おてほん」モードのいろ', fallback: 'bg-green-400'  },
+                { key: 'testColor',      label: '「🙈ぜんぶ🙈」モードのいろ', fallback: 'bg-purple-400' },
               ].map(({ key, label, fallback }) => (
                 <div key={key}>
                   <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2">
@@ -269,15 +275,35 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
           </div>
 
           <div className="bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm">
-            <h3 className="font-bold text-lg mb-1 text-red-800 flex items-center gap-1"><Lock className="w-4 h-4"/> データのおまもり</h3>
+            <h3 className="font-bold text-lg mb-1 text-red-800 flex items-center gap-1"><Lock className="w-4 h-4"/> データのおまもり（バックアップと復元）</h3>
+            <p className="text-xs text-red-600 mb-3 leading-relaxed">これまでに集めた文字や設定をファイルに保存します。<br/>データが消えてしまった時や、別のタブレットにお引越しする時に使えます。</p>
             <div className="flex gap-4">
               <button onClick={handleExport} className="flex-1 py-3 rounded-lg font-bold bg-white border-2 border-red-300 text-red-700 hover:bg-red-100 transition-all shadow-sm">
-                ほぞんする<br/><span className="text-[10px] font-normal">（書き出し）</span>
+                データをほぞんする<br/><span className="text-[10px] font-normal">（書き出し）</span>
               </button>
               <button onClick={() => fileInputRef.current.click()} className="flex-1 py-3 rounded-lg font-bold bg-red-400 border-2 border-red-500 text-white hover:bg-red-500 transition-all shadow-sm">
-                ふくげんする<br/><span className="text-[10px] font-normal">（読み込み）</span>
+                データをふくげんする<br/><span className="text-[10px] font-normal">（読み込み）</span>
               </button>
               <input type="file" accept=".json" ref={fileInputRef} onChange={handleImport} className="hidden" />
+            </div>
+          </div>
+
+          <div className="bg-sky-50 p-4 rounded-xl border border-sky-200 shadow-sm">
+            <h3 className="font-bold text-lg mb-2 text-sky-800 flex items-center gap-2">📱 タブレットを乗り換えるとき</h3>
+            <div className="space-y-3 text-sm text-sky-700">
+              {[
+                { n: 1, text: <span>いまの端末で<strong>「データをほぞんする」</strong>を押して、ファイルをダウンロードしてね</span> },
+                { n: 2, text: <span>あたらしい端末にファイルを移して、<strong>「データをふくげんする」</strong>で読み込んでね</span> },
+                { n: 3, text: <span>集めた文字やれんしゅうデータが、そのままうつるよ！</span> },
+              ].map(({ n, text }) => (
+                <div key={n} className="flex gap-2 items-start">
+                  <span className="shrink-0 font-bold bg-sky-400 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">{n}</span>
+                  <p>{text}</p>
+                </div>
+              ))}
+              <div className="p-3 bg-white rounded-lg border border-sky-200 text-xs text-stone-500 leading-relaxed">
+                ⚠️ ふくげんすると、いまのデータはすべて上書きされるよ。大事なデータは先にほぞんしてね。
+              </div>
             </div>
           </div>
 

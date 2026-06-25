@@ -7,6 +7,7 @@ import { SvgStroke } from '../components/SvgStroke';
 import { Sparkles, Check, GridIcon, BookOpen, X } from '../components/Icons';
 import { AdminScreen } from './AdminScreen';
 import { PracticeStudio } from './PracticeStudio';
+import { VisualSettingScreen } from './VisualSettingScreen';
 import { StarShowerOverlay } from './StarShowerOverlay';
 import { WordRegisterModal } from './WordRegisterModal';
 
@@ -82,6 +83,7 @@ const emitEmojiParticles = (e, emoji) => {
 
 export const MainApp = ({ currentUser, onLogout }) => {
   const [view, setView] = useState('grid');
+  const [prevView, setPrevView] = useState('grid');
   const [activeTab, setActiveTab] = useState('home');
   const [selectedKanji, setSelectedKanji] = useState(null);
   const [bestShots, setBestShots] = useState({});
@@ -437,11 +439,12 @@ export const MainApp = ({ currentUser, onLogout }) => {
     );
   };
 
-  if (view === 'admin') return <AdminScreen onBack={() => setView('grid')} settings={settings} saveSettings={saveSettingsWrapper} />;
+  if (view === 'admin') return <AdminScreen onBack={() => setView(prevView || 'grid')} settings={settings} saveSettings={saveSettingsWrapper} />;
+  if (view === 'visualSetting') return <VisualSettingScreen settings={settings} saveSettings={saveSettingsWrapper} onBack={() => setView(prevView || 'grid')} />;
   if (view === 'practice') return (
     <PracticeStudio currentUser={currentUser} targetKanji={selectedKanji} settings={settings}
       onBack={() => setView('grid')} onSaveBest={saveBestShot} onSaveComplete={handleSaveComplete}
-      onOpenAdmin={() => setView('admin')}
+      onOpenAdmin={() => { setPrevView('practice'); setView('admin'); }}
       onToggleSound={() => saveSettingsWrapper({ ...settings, soundEnabled: !(settings.soundEnabled !== false) })}
       onToggleVoice={() => saveSettingsWrapper({ ...settings, voiceEnabled: !(settings.voiceEnabled !== false) })}
       onSaveSettings={saveSettingsWrapper}
