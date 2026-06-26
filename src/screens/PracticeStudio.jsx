@@ -533,18 +533,8 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
               <span className="text-sm font-bold text-amber-500/70">かいた文字がここに集まるよ！</span>
             </div>
           )}
-          {practices.length === 0 && pastBest && (
-            <div className="flex-shrink-0 w-20 h-20 md:w-28 md:h-28 bg-white rounded-xl border-2 border-stone-200 p-1 relative mt-4 shadow-sm opacity-40 grayscale">
-              <div className="w-full h-full p-1 relative">
-                <ShotDisplay shot={pastBest} strokeWidth={10} color="#374151" hintStrokeWidth={8} />
-              </div>
-              <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 border border-stone-300 rounded-full whitespace-nowrap shadow-sm bg-white text-stone-400">
-                まえのきろく
-              </span>
-            </div>
-          )}
 
-          {isGoalReached && practices.length > 0 && (
+          {isGoalReached && (practices.length > 0 || pastBest) && (
             <div className="absolute top-0 left-0 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-br-xl z-20 flex items-center gap-1 shadow"
               style={{ background: 'linear-gradient(90deg, #f59e0b, #f97316)' }}>
               <Unlock className="w-3 h-3 md:w-4 md:h-4"/> {unlockText}
@@ -599,6 +589,39 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
               </div>
             );
           })}
+
+          {pastBest && (() => {
+            const isSelectable = canSelect(pastBest.type);
+            const colorTheme = modeThemeOf(pastBest.type);
+            const pbId = 'pastBest';
+            return (
+              <div key={pbId}
+                onClick={() => {
+                  if (isGoalReached && isSelectable && !savingId) {
+                    setSavingId(pbId);
+                    speakWithSettings(targetKanji.char, settings);
+                    if (navigator.vibrate) navigator.vibrate([30, 50]);
+                    setTimeout(async () => {
+                      await onSaveBest(targetKanji.char, pastBest);
+                      onSaveComplete(targetKanji.char, pastBest.type);
+                    }, 500);
+                  }
+                }}
+                className={`flex-shrink-0 w-20 h-20 md:w-28 md:h-28 bg-white rounded-xl border-2 p-1 transition-all duration-300 relative mt-4 shadow-sm
+                  ${isGoalReached && isSelectable && !savingId ? 'cursor-pointer hover:-translate-y-2 hover:shadow-xl ' + colorTheme.class : ''}
+                  ${savingId === pbId ? 'scale-90 ring-4 shadow-inner z-50 opacity-90 ' + colorTheme.class : ''}
+                  ${savingId && savingId !== pbId ? 'opacity-0 scale-50' : ''}
+                  ${!isGoalReached || !isSelectable ? 'opacity-40 grayscale border-stone-200' + (!isSelectable && isGoalReached ? ' cursor-not-allowed' : '') : ''}`}>
+                <div className="w-full h-full p-1 relative">
+                  <ShotDisplay shot={pastBest} strokeWidth={10} color="#374151" hintStrokeWidth={8} />
+                </div>
+                <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 border rounded-full whitespace-nowrap shadow-sm"
+                  style={{ color: colorTheme.hex, borderColor: colorTheme.hex + '66', backgroundColor: colorTheme.hex + '11' }}>
+                  まえ
+                </span>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -741,7 +764,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                   return (
                     <div className="absolute inset-0 pointer-events-none select-none z-20 p-4 flex items-center justify-center animate-fade-in">
                       <svg viewBox="0 0 109 109" className="w-full h-full opacity-50">
-                        {displayPaths.map((p, i) => (
+                        {svgPaths.map((p, i) => (
                           <path key={i} d={p.d} fill="none" strokeWidth="6" stroke="#0284c7"
                             strokeLinecap="round" strokeLinejoin="round" />
                         ))}
