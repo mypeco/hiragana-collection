@@ -18,7 +18,7 @@ export const StrokeOrderModal = ({ paths, strokes, targetKanji, settings, onClos
 
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(onClose, 220);
+    setTimeout(onClose, 120);
   };
 
   const handleReplay = () => {
@@ -32,7 +32,7 @@ export const StrokeOrderModal = ({ paths, strokes, targetKanji, settings, onClos
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ animation: `${isClosing ? 'fade-out' : 'fade-in'} 0.22s ease-out forwards` }}
+      style={{ animation: `${isClosing ? 'fade-out' : 'fade-in'} ${isClosing ? '0.12s' : '0.22s'} ease-out forwards` }}
     >
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
       <div className="relative z-10 bg-[#fdfbf7] rounded-3xl shadow-2xl p-6 mx-4 w-full max-w-lg flex flex-col items-center gap-4">
