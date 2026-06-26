@@ -70,17 +70,8 @@ export const SettingsSidebar = ({ settings, onSave, onClose }) => {
                 ]}/>
             </Row>
 
-            {local.partColor && (
-              <Row label="🔍 部品の細かさ">
-                <BtnGroup cols={2} current={local.groupLevel ?? 'large'} onSelect={v => set('groupLevel', v)}
-                  options={[
-                    { id: 'large', emoji: '🟦', label: 'おおきく' },
-                    { id: 'small', emoji: '🔷', label: 'こまかく' },
-                  ]}/>
-              </Row>
-            )}
 
-            <Row label={`⏱ ふでの速さ　${speedLabel(local.animSpeed ?? 1300)}`}>
+<Row label={`⏱ ふでの速さ　${speedLabel(local.animSpeed ?? 1300)}`}>
               <div className="flex items-center gap-2">
                 <span className="text-sm">🐇</span>
                 <input type="range" min="300" max="2500" step="100" value={local.animSpeed ?? 1300}

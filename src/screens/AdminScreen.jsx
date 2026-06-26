@@ -178,16 +178,7 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
             </div>
           </div>
 
-          <div className="bg-sky-50 p-4 rounded-xl border border-sky-200 shadow-sm">
-            <h3 className="font-bold text-lg mb-1 text-sky-800 flex items-center gap-1"><Sparkles className="w-4 h-4"/> はじめての「書き順かくにん」</h3>
-            <p className="text-xs text-sky-600 mb-3">はじめて書く文字は、おてほんのアニメーションを見るまでキャンバスに書けないようにします。</p>
-            <div className="flex gap-2">
-              <button onClick={() => saveSettings({...settings, requireGuide: true})}  className={`px-4 py-2 rounded-lg font-bold border-2 transition-all ${settings.requireGuide ? 'border-sky-500 bg-sky-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>ON</button>
-              <button onClick={() => saveSettings({...settings, requireGuide: false})} className={`px-4 py-2 rounded-lg font-bold border-2 transition-all ${!settings.requireGuide ? 'border-stone-500 bg-stone-500 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>OFF</button>
-            </div>
-          </div>
-
-          <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 shadow-sm">
+<div className="bg-amber-50 p-4 rounded-xl border border-amber-200 shadow-sm">
             <h3 className="font-bold text-lg mb-1 text-amber-800 flex items-center gap-1"><Sparkles className="w-4 h-4"/> NEW✨マークの表示期間</h3>
             <p className="text-xs text-amber-600 mb-3">「さいきんかけたもじ」セクションにも同じ期間が使われます。</p>
             <div className="flex gap-2 flex-wrap">

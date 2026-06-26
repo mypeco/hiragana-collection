@@ -28,8 +28,8 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
   const isKogaki = ['ゃ','ゅ','ょ','っ'].includes(targetKanji.char);
 
   const canvasSize = settings.canvasSize ?? 'medium';
-  const canvasSizeClass = canvasSize === 'large' ? 'w-64 md:w-96' : canvasSize === 'small' ? 'w-44 md:w-64' : 'w-56 md:w-80';
-  const refSizeClass    = canvasSize === 'large' ? 'w-48 md:w-72' : canvasSize === 'small' ? 'w-32 md:w-48' : 'w-40 md:w-60';
+  const canvasSizeClass = canvasSize === 'large' ? 'w-64 md:w-80 max-w-[42vw]' : canvasSize === 'small' ? 'w-44 md:w-64 max-w-[35vw]' : 'w-56 md:w-72 max-w-[38vw]';
+  const refSizeClass    = canvasSize === 'large' ? 'w-48 md:w-64 max-w-[32vw]' : canvasSize === 'small' ? 'w-32 md:w-48 max-w-[26vw]' : 'w-40 md:w-56 max-w-[29vw]';
 
   const strokeCheckTarget    = settings.strokeCheckTarget    ?? 1;
   const traceAllTarget       = settings.traceAllTarget       ?? 1;
@@ -74,8 +74,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
   const [isFlowDone, setIsFlowDone] = useState(false);
   const isFlowDoneRef = useRef(false);
 
-  const needsStrokeCheck = strokeCheckTarget > 0 && !strokeCheckDone;
-  const isCanvasLocked = (settings.requireGuide && practices.length === 0 && !isGuideWatched) || needsStrokeCheck;
+  const isCanvasLocked = false;
 
   const [flyingCard, setFlyingCard] = useState({ active: false, image: null, startX: 0, startY: 0, tx: 0, ty: 0, flying: false });
 
@@ -172,7 +171,6 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
   };
 
   const start = (e) => {
-    if (isCanvasLocked) return;
     if (!practiceModeRef.current) return;
     adjustCanvasSize();
     const { rawX, rawY, normX, normY } = getPos(e);
@@ -757,15 +755,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                   <div className="absolute inset-0 z-30 bg-white/90 rounded-2xl flex items-center justify-center pointer-events-none" />
                 )}
 
-                {isCanvasLocked && (
-                  <div className="absolute inset-0 z-30 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl border-4 border-dashed border-sky-300 animate-fade-in">
-                    <Lock className="w-12 h-12 text-sky-400 mb-2" />
-                    <span className="text-sky-700 font-bold text-sm text-center px-4 bg-white/90 py-2 rounded-xl shadow-sm">
-                      {needsStrokeCheck ? 'まずは 書き順を\nかくにんしてね！' : 'まずは 左のおてほんを\n「さいせい」して見てね！'}
-                    </span>
-                  </div>
-                )}
-                {!practiceMode && !isCanvasLocked && (
+                {!practiceMode && (
                   <div className="absolute inset-0 z-30 bg-stone-100/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl animate-fade-in">
                     <span className="text-4xl mb-3">🎉</span>
                     <span className="text-stone-600 font-bold text-sm text-center px-5 py-3 bg-white/90 rounded-2xl shadow-sm leading-relaxed">
@@ -776,7 +766,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
               </div>
 
               {/* ちらみボタン（隠しモード時） */}
-              {isHiddenMode && !isCanvasLocked && (
+              {isHiddenMode && (
                 <button
                   onTouchStart={() => setHintAnim(true)}
                   onTouchEnd={() => setHintAnim(false)}
