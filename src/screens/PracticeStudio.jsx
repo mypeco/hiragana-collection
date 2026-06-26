@@ -56,6 +56,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
 
   const [strokeWarning, setStrokeWarning] = useState(false);
   const [practices, setPractices] = useState([]);
+  const [pastBest, setPastBest] = useState(null);
 
   const sessionLogs = useMemo(() => ({
     traceAll:        practices.filter(p => p.type === 'traceAll' || p.type === 'trace').length,
@@ -116,12 +117,10 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
 
   useEffect(() => {
     const loadData = async () => {
-      let savedPractices = await db.practices.where({ userId: currentUser.id, char: targetKanji.char }).toArray();
-      if (savedPractices.length === 0) {
-        const pastBest = await db.bestShots.get({ userId: currentUser.id, char: targetKanji.char });
-        if (pastBest) savedPractices = [pastBest];
-      }
+      const savedPractices = await db.practices.where({ userId: currentUser.id, char: targetKanji.char }).toArray();
       setPractices(savedPractices);
+      const best = await db.bestShots.get({ userId: currentUser.id, char: targetKanji.char });
+      setPastBest(best || null);
     };
     loadData();
   }, [targetKanji.char, currentUser.id]);
@@ -528,10 +527,20 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
         <div ref={practicesStripRef} className={`w-[95%] h-36 md:h-44 rounded-2xl p-3 md:p-4 flex gap-3 overflow-x-auto relative items-center transition-all duration-500 ${isGoalReached ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-4 border-amber-400 shadow-lg' : 'bg-white border-4 border-amber-200 shadow-sm'}`}
           style={isGoalReached ? { boxShadow: '0 0 0 4px #fde68a44, 0 4px 24px #fbbf2420' } : {}}>
 
-          {practices.length === 0 && (
+          {practices.length === 0 && !pastBest && (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-amber-400">
               <span className="text-3xl opacity-50">✍️</span>
               <span className="text-sm font-bold text-amber-500/70">かいた文字がここに集まるよ！</span>
+            </div>
+          )}
+          {practices.length === 0 && pastBest && (
+            <div className="flex-shrink-0 w-20 h-20 md:w-28 md:h-28 bg-white rounded-xl border-2 border-stone-200 p-1 relative mt-4 shadow-sm opacity-40 grayscale">
+              <div className="w-full h-full p-1 relative">
+                <ShotDisplay shot={pastBest} strokeWidth={10} color="#374151" hintStrokeWidth={8} />
+              </div>
+              <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 border border-stone-300 rounded-full whitespace-nowrap shadow-sm bg-white text-stone-400">
+                まえのきろく
+              </span>
             </div>
           )}
 
