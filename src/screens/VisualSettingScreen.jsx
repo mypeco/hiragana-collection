@@ -55,7 +55,7 @@ export const VisualSettingScreen = ({ settings, saveSettings, onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] flex flex-col items-center px-4 py-6">
+    <div className="min-h-screen bg-[#fdfbf7] flex flex-col items-center px-4 py-6 animate-fade-in">
       <div className="w-full max-w-sm flex items-center gap-3 mb-6">
         <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-stone-200 shadow-sm text-stone-500 font-bold text-lg active:scale-95">←</button>
         <div className="flex-1 text-center">

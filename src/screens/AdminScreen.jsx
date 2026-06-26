@@ -115,7 +115,7 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto bg-white min-h-screen">
+    <div className="p-6 max-w-5xl mx-auto bg-[#fdfbf7] min-h-screen animate-fade-in">
       <div className="flex justify-between items-center mb-6 border-b pb-4">
         <button onClick={onBack} className="text-stone-500 flex items-center gap-1 bg-stone-100 px-4 py-2 rounded-full font-bold hover:bg-stone-200 transition-colors">
           ↩️ もどる

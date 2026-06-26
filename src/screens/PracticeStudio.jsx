@@ -472,7 +472,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
 
   return (
     <>
-    <div className="flex flex-col h-screen w-full max-w-4xl mx-auto bg-[#fdfbf7] overflow-hidden">
+    <div className="flex flex-col h-screen w-full max-w-4xl mx-auto bg-[#fdfbf7] overflow-hidden animate-fade-in">
       <div className="pt-3 pb-2 flex flex-col items-center z-10 shrink-0 transition-colors duration-500">
 
         <div className="w-full flex justify-between items-start mb-2 px-3 gap-2">
