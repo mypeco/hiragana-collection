@@ -897,6 +897,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
         strokes={targetKanji.strokes}
         targetKanji={targetKanji}
         settings={settings}
+        isKogaki={isKogaki}
         onClose={() => { setShowStrokeModal(false); setStrokeCheckDone(true); }}
       />
     )}

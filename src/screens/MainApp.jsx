@@ -565,42 +565,42 @@ export const MainApp = ({ currentUser, onLogout }) => {
             </div>
           </div>
 
-          <div className={`w-full max-w-xs mx-auto rounded-2xl px-5 py-4 border-2 shadow-sm transition-all
-            ${totalCollected >= KANA_DATA.length
-              ? 'bg-gradient-to-b from-amber-50 to-yellow-50 border-amber-300 cursor-pointer hover:scale-105 hover:shadow-lg active:scale-95 animate-unlock-glow'
-              : 'bg-white border-amber-100'}`}
-            onClick={totalCollected >= KANA_DATA.length ? replayStarCelebration : undefined}>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-bold text-amber-500">
-                {totalCollected >= KANA_DATA.length ? '🎊 ぜんぶ あつめた！' : '🏆 あつめた もじ'}
-              </span>
-              <span className="text-base font-bold text-stone-700 font-kyokasho">
-                {totalCollected}<span className="text-xs text-stone-400 font-sans"> / {KANA_DATA.length}こ</span>
-              </span>
-            </div>
-            <div className="w-full bg-amber-50 rounded-full h-3 overflow-hidden border border-amber-100">
-              <div className="h-full rounded-full transition-all duration-1000"
-                style={{
-                  width: `${Math.min(totalCollected / KANA_DATA.length * 100, 100)}%`,
-                  background: totalCollected >= KANA_DATA.length
-                    ? 'linear-gradient(90deg, #f59e0b, #f97316, #ef4444)'
-                    : 'linear-gradient(90deg, #fbbf24, #f97316)'
-                }} />
-            </div>
-            {totalCollected > 0 && (
-              <div className="flex flex-wrap justify-center mt-2 gap-0.5">
-                {[...Array(Math.min(totalCollected, 15))].map((_, i) => (
-                  <span key={i} className="text-amber-400 text-[10px] animate-pop-in">⭐</span>
-                ))}
-                {totalCollected > 15 && <span className="text-amber-400 text-[10px] font-bold">…</span>}
+          {(() => {
+            const MILESTONES = [10, 20, 30, 40, 50, 60, 70, 75];
+            const nextMilestone = MILESTONES.find(m => m > totalCollected);
+            const remaining = nextMilestone ? nextMilestone - totalCollected : 0;
+            const isFinal = totalCollected >= KANA_DATA.length;
+            return (
+              <div className={`w-full max-w-xs mx-auto rounded-2xl px-5 py-4 border-2 shadow-sm transition-all text-center
+                ${isFinal
+                  ? 'bg-gradient-to-b from-amber-50 to-yellow-50 border-amber-300 cursor-pointer hover:scale-105 hover:shadow-lg active:scale-95 animate-unlock-glow'
+                  : 'bg-white border-amber-100'}`}
+                onClick={isFinal ? replayStarCelebration : undefined}>
+                {isFinal ? (
+                  <>
+                    <div className="text-2xl mb-1">🎊</div>
+                    <div className="text-sm font-bold text-amber-600 font-kyokasho">ぜんぶ あつめた！</div>
+                    <div className="mt-2 text-[11px] font-bold text-amber-500 animate-pulse">
+                      ⭐ タップして ほしを ふらせよう！ ⭐
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-[11px] font-bold text-amber-400 mb-1">ながれぼしまで</div>
+                    <div className="text-4xl font-bold text-amber-500 font-kyokasho leading-none">
+                      あと <span className="text-5xl text-orange-500">{remaining}</span> こ
+                    </div>
+                    <div className="flex justify-center gap-0.5 mt-2 flex-wrap">
+                      {MILESTONES.map(m => (
+                        <span key={m} className={`text-sm ${totalCollected >= m ? 'opacity-100' : 'opacity-20'}`}>⭐</span>
+                      ))}
+                    </div>
+                    <div className="text-[10px] text-stone-400 mt-1">{totalCollected} / {KANA_DATA.length}こ あつめた</div>
+                  </>
+                )}
               </div>
-            )}
-            {totalCollected >= KANA_DATA.length && (
-              <div className="mt-2 text-center text-[11px] font-bold text-amber-600 animate-pulse">
-                ⭐ タップして ほしを ふらせよう！ ⭐
-              </div>
-            )}
-          </div>
+            );
+          })()}
 
           <div className="w-full flex justify-center gap-3 md:gap-5 flex-wrap">
             {[
@@ -689,21 +689,7 @@ export const MainApp = ({ currentUser, onLogout }) => {
 
       {activeTab === 'hiragana' && (
         <div className="flex flex-col gap-6 pb-12 w-full animate-fade-in">
-          <div className="w-full bg-white rounded-2xl px-5 py-3 border-2 border-amber-100 shadow-sm flex items-center gap-4">
-            <span className="text-lg shrink-0">🏆</span>
-            <div className="flex-1">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[11px] font-bold text-amber-500">あつめた もじ</span>
-                <span className="text-sm font-bold text-stone-700 font-kyokasho">{totalCollected}<span className="text-xs text-stone-400 font-sans"> / {KANA_DATA.length}こ</span></span>
-              </div>
-              <div className="w-full bg-amber-50 rounded-full h-2.5 overflow-hidden border border-amber-100">
-                <div className="h-full rounded-full transition-all duration-1000"
-                  style={{ width: `${Math.min(totalCollected / KANA_DATA.length * 100, 100)}%`, background: 'linear-gradient(90deg, #fbbf24, #f97316)' }} />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl p-4 border-2 border-amber-100 shadow-sm sticky top-20 z-30 backdrop-blur-sm"
+<div className="rounded-2xl p-4 border-2 border-amber-100 shadow-sm sticky top-20 z-30 backdrop-blur-sm"
             style={{ background: 'linear-gradient(135deg, #fffbeb, #fff7ed)' }}>
             <h3 className="text-center text-amber-600 font-bold text-xs mb-3 flex items-center justify-center gap-2">
               <Sparkles className="w-3 h-3"/> ギャラリーにかざる 4まい <Sparkles className="w-3 h-3"/>
