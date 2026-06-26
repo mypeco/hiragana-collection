@@ -634,7 +634,8 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                   <AnimatedKana paths={svgPaths} strokes={targetKanji.strokes} settings={settings}
                     onComplete={() => setIsGuideWatched(true)} isKogaki={isKogaki}
                     trickyStroke={targetKanji.trickyStroke} playRef={kanaPlayRef}
-                    onStatusChange={setKanaStatus} onStrokeChange={setSyncStrokeIndex} />
+                    onStatusChange={setKanaStatus} onStrokeChange={setSyncStrokeIndex}
+                    hideReplayButton={true} />
                 ) : (
                   <div className="w-full h-full bg-white rounded-xl shadow-md border-4 border-orange-200 relative select-none">
                     <div className="absolute inset-0 pointer-events-none opacity-50 z-0">
@@ -676,12 +677,12 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                 <MasuBg masuStyle={settings.masuStyle} />
 
                 {/* traceAll / traceBlue ガイド */}
-                {(practiceMode === 'traceAll' || practiceMode === 'traceBlue') && svgPaths && (() => {
+                {(practiceMode === 'traceAll' || practiceMode === 'traceBlue' || practiceMode === 'traceBlueHidden') && svgPaths && (() => {
                   const go = settings.guideOpacity || 'soft';
                   if (go === 'none') return null;
                   const op = go === 'strong' ? 0.55 : 0.30;
                   const isSyncing = settings.syncTrace && kanaStatus === 'playing';
-                  const displayPaths = practiceMode === 'traceBlue' ? bluePaths : svgPaths;
+                  const displayPaths = (practiceMode === 'traceBlue' || practiceMode === 'traceBlueHidden') ? bluePaths : svgPaths;
                   return (
                     <div className={isKogaki ? 'absolute pointer-events-none select-none z-0' : 'absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 p-4'}
                       style={isKogaki ? {left:'-8%', bottom:'0%', width:'66%', height:'66%'} : {}}>
@@ -728,7 +729,6 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
 
                 {/* traceBlueHidden / test の「ちらみ」ヒント */}
                 {isHiddenMode && hintAnim && svgPaths && (() => {
-                  const displayPaths = (practiceMode === 'traceBlueHidden') ? bluePaths : svgPaths;
                   return (
                     <div className="absolute inset-0 pointer-events-none select-none z-20 p-4 flex items-center justify-center animate-fade-in">
                       <svg viewBox="0 0 109 109" className="w-full h-full opacity-50">

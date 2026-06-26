@@ -227,28 +227,48 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
             <h3 className="font-bold text-lg mb-1 text-purple-800 flex items-center gap-1"><Sparkles className="w-4 h-4"/> コレクションの「登録ライン」</h3>
             <p className="text-xs text-purple-600 mb-1">どの書き方で仕上げた時に、一覧（コレクション）へ追加するかを決めます。</p>
             <p className="text-xs text-purple-400 mb-3">※後で変更しても、過去にかざった文字は消えません</p>
-            <div className="flex flex-col gap-2">
-              <button onClick={() => saveSettings({...settings, completionLevel: 1})} className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${settings.completionLevel === 1 || !settings.completionLevel ? 'border-purple-500 bg-purple-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>
-                1： なぞり・てん・おてほん・みないで（どれでもOK）
-              </button>
-              <button onClick={() => saveSettings({...settings, completionLevel: 2})} className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${settings.completionLevel === 2 ? 'border-purple-500 bg-purple-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>
-                2： おてほん・みないで（自力で書けたらOK）
-              </button>
-              <button onClick={() => saveSettings({...settings, completionLevel: 3})} className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${settings.completionLevel === 3 ? 'border-purple-500 bg-purple-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>
-                3： みないで（見本なしで書けたらOK）
-              </button>
-            </div>
+            {(() => {
+              const hasBlank    = (settings.blankTarget          ?? 1) > 0;
+              const hasHidden   = (settings.traceBlueHiddenTarget ?? 0) > 0;
+              const hasTest     = (settings.testTarget            ?? 1) > 0;
+              const lvl2ok = hasBlank || hasHidden || hasTest;
+              const lvl3ok = hasHidden || hasTest;
+              const disabledCls = 'border-stone-200 bg-stone-50 text-stone-300 cursor-not-allowed';
+              const activeCls   = 'border-purple-500 bg-purple-400 text-white shadow-md';
+              const normalCls   = 'border-stone-300 bg-white text-stone-600 hover:border-purple-300';
+              return (
+                <div className="flex flex-col gap-2">
+                  <button onClick={() => saveSettings({...settings, completionLevel: 1})}
+                    className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${settings.completionLevel === 1 || !settings.completionLevel ? activeCls : normalCls}`}>
+                    1： なぞり・てん・おてほん・みないで（どれでもOK）
+                  </button>
+                  <button onClick={() => lvl2ok && saveSettings({...settings, completionLevel: 2})}
+                    disabled={!lvl2ok}
+                    className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${!lvl2ok ? disabledCls : settings.completionLevel === 2 ? activeCls : normalCls}`}>
+                    2： おてほん・みないで（自力で書けたらOK）
+                    {!lvl2ok && <span className="block text-[11px] font-normal mt-0.5 text-stone-400">※ おてほん か みないでモードを追加してください</span>}
+                  </button>
+                  <button onClick={() => lvl3ok && saveSettings({...settings, completionLevel: 3})}
+                    disabled={!lvl3ok}
+                    className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${!lvl3ok ? disabledCls : settings.completionLevel === 3 ? activeCls : normalCls}`}>
+                    3： みないで（見本なしで書けたらOK）
+                    {!lvl3ok && <span className="block text-[11px] font-normal mt-0.5 text-stone-400">※ みないでモードを追加してください</span>}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="bg-stone-50 p-4 rounded-xl border border-stone-200">
             <h3 className="font-bold text-lg mb-3">各モードの枠の色設定</h3>
             <div className="space-y-6">
               {[
-                { key: 'traceColor',     label: '「✏️ぜんぶ」モードのいろ',   fallback: 'bg-red-400'    },
-                { key: 'traceBlueColor', label: '「🟦いちぶ」モードのいろ',   fallback: 'bg-orange-400' },
-                { key: 'tenColor',       label: '「⚫️てん」モードのいろ',     fallback: 'bg-orange-400' },
-                { key: 'blankColor',     label: '「👁️おてほん」モードのいろ', fallback: 'bg-green-400'  },
-                { key: 'testColor',      label: '「🙈ぜんぶ🙈」モードのいろ', fallback: 'bg-purple-400' },
+                { key: 'traceColor',           label: '「✏️ぜんぶ」モードのいろ',    fallback: 'bg-red-400'    },
+                { key: 'traceBlueColor',       label: '「🟦いちぶ」モードのいろ',    fallback: 'bg-orange-400' },
+                { key: 'tenColor',             label: '「⚫️てん」モードのいろ',      fallback: 'bg-orange-400' },
+                { key: 'blankColor',           label: '「👁️おてほん」モードのいろ',  fallback: 'bg-green-400'  },
+                { key: 'traceBlueHiddenColor', label: '「🟦🙈いちぶ🙈」モードのいろ', fallback: 'bg-sky-400'    },
+                { key: 'testColor',            label: '「🙈ぜんぶ🙈」モードのいろ',  fallback: 'bg-purple-400' },
               ].map(({ key, label, fallback }) => (
                 <div key={key}>
                   <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2">
