@@ -55,6 +55,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
   const isTestMode   = isHiddenMode;
 
   const [strokeWarning, setStrokeWarning] = useState(false);
+  const [coversVisible, setCoversVisible] = useState(true);
   const [practices, setPractices] = useState([]);
   const [pastBest, setPastBest] = useState(null);
 
@@ -416,6 +417,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
         isFlowDoneRef.current = true;
       } else if (nextMode) {
         setPracticeMode(nextMode);
+        setCoversVisible(true);
       }
     }, 800);
   };
@@ -428,7 +430,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
   };
 
   const traceTheme           = COLOR_OPTIONS.find(c=>c.id===settings.traceColor)            || COLOR_OPTIONS.find(c=>c.id==='red');
-  const traceBlueTheme       = COLOR_OPTIONS.find(c=>c.id===settings.traceBlueColor)         || COLOR_OPTIONS.find(c=>c.id==='sky');
+  const traceBlueTheme       = COLOR_OPTIONS.find(c=>c.id===settings.traceBlueColor)         || COLOR_OPTIONS.find(c=>c.id==='orange');
   const tenTheme             = COLOR_OPTIONS.find(c=>c.id===settings.tenColor)               || COLOR_OPTIONS.find(c=>c.id==='orange');
   const blankTheme           = COLOR_OPTIONS.find(c=>c.id===settings.blankColor)             || COLOR_OPTIONS.find(c=>c.id==='green');
   const traceBlueHiddenTheme = COLOR_OPTIONS.find(c=>c.id===settings.traceBlueHiddenColor)   || COLOR_OPTIONS.find(c=>c.id==='sky');
@@ -576,7 +578,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                   ${!isGoalReached || !isSelectable ? 'opacity-40 grayscale border-stone-200' + (!isSelectable && isGoalReached ? ' cursor-not-allowed' : '') : ''}`}>
                 <div className="w-full h-full p-1 relative">
                   <ShotDisplay shot={p} strokeWidth={10} color="#374151" hintStrokeWidth={8} />
-                  {isTestMode && (
+                  {isTestMode && coversVisible && (
                     <div className="absolute inset-1 bg-stone-100/95 backdrop-blur-sm rounded-lg flex items-center justify-center z-10 border border-stone-200">
                       <span className="text-2xl grayscale opacity-50">🙈</span>
                     </div>
@@ -614,7 +616,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                   ${!isGoalReached || !isSelectable ? 'opacity-40 grayscale border-stone-200' + (!isSelectable && isGoalReached ? ' cursor-not-allowed' : '') : ''}`}>
                 <div className="w-full h-full p-1 relative">
                   <ShotDisplay shot={pastBest} strokeWidth={10} color="#374151" hintStrokeWidth={8} />
-                  {pastBest.type === 'test' && (
+                  {pastBest.type === 'test' && coversVisible && (
                     <div className="absolute inset-1 bg-stone-100/95 backdrop-blur-sm rounded-lg flex items-center justify-center z-10 border border-stone-200">
                       <span className="text-2xl grayscale opacity-50">🙈</span>
                     </div>
@@ -643,7 +645,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                 traceBlueHiddenTarget > 0 ? { mode: 'traceBlueHidden', label: '🫣いちぶ',   theme: traceBlueHiddenTheme } : null,
                 testTarget            > 0 ? { mode: 'test',            label: '🙈ぜんぶ',   theme: testTheme            } : null,
               ].filter(Boolean).map(({ mode, label, theme }) => (
-                <button key={mode} onClick={() => !hasDrawn && setPracticeMode(mode)} disabled={hasDrawn}
+                <button key={mode} onClick={() => { if (!hasDrawn) { setPracticeMode(mode); setCoversVisible(true); } }} disabled={hasDrawn}
                   className={`relative px-3 py-1.5 rounded-full text-xs md:text-sm font-bold transition-all ${practiceMode !== mode ? 'text-gray-400 hover:bg-gray-50' : ''} ${hasDrawn ? 'opacity-30 cursor-not-allowed' : ''}`}
                   style={practiceMode === mode ? { backgroundColor: `${theme.hex}22`, color: theme.hex } : {}}>
                   {label}
@@ -830,7 +832,17 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                   </div>
                   <span className="text-[10px] md:text-xs font-bold">けす</span>
                 </button>
-                <div className="w-14 md:w-20 h-28 md:h-36" aria-hidden="true" />
+                {isGoalReached && !savingId ? (
+                  <button
+                    onClick={() => setCoversVisible(false)}
+                    className="flex flex-col items-center justify-center w-14 md:w-20 h-28 md:h-36 rounded-2xl shadow-md border-2 border-amber-400 bg-amber-400 text-white font-bold gap-1 active:scale-95 transition-all animate-bounce-in"
+                  >
+                    <span className="text-lg">⭐</span>
+                    <span className="text-sm md:text-base tracking-widest leading-tight">えらぶ</span>
+                  </button>
+                ) : (
+                  <div className="w-14 md:w-20 h-28 md:h-36" aria-hidden="true" />
+                )}
 
                 {strokeWarning && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 backdrop-blur-sm animate-fade-in p-4">
@@ -882,14 +894,6 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
               </button>
             </div>
 
-            {isGoalReached && !savingId && (
-              <button
-                onClick={() => practicesStripRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-                className="mt-2 mx-auto px-6 py-2 rounded-full font-bold text-sm bg-amber-400 text-white border-2 border-amber-500 shadow-md active:scale-95 transition-all animate-bounce-in"
-              >
-                ⭐ えらぶ
-              </button>
-            )}
           </div>
         </div>
       </div>
