@@ -423,7 +423,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
   const completionLevel = settings.completionLevel || 1;
   const canSelect = (type) => {
     if (completionLevel === 3 && type !== 'test') return false;
-    if (completionLevel === 2 && (type === 'traceAll' || type === 'trace' || type === 'traceBlue' || type === 'ten' || type === 'hint' || type === 'traceBlueHidden')) return false;
+    if (completionLevel === 2 && (type === 'traceAll' || type === 'trace' || type === 'traceBlue' || type === 'ten' || type === 'hint')) return false;
     return true;
   };
 
@@ -461,8 +461,8 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
     return type;
   };
 
-  const unlockText = completionLevel === 3 ? '「みないで」からえらぼう！' :
-    completionLevel === 2 ? '「おてほん」「みないで」からえらぼう！' : 'えらべるよ！';
+  const unlockText = completionLevel === 3 ? '🙈 からえらぼう！' :
+    completionLevel === 2 ? '👁️ か 🟦🙈 か 🙈 からえらぼう！' : 'えらべるよ！';
 
   // traceBlue用パス
   const bluePaths = useMemo(() =>

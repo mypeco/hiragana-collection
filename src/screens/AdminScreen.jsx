@@ -144,16 +144,15 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
           <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 shadow-sm">
             <h3 className="font-bold text-lg mb-1 text-yellow-800 flex items-center gap-2">⭐ きょうのもくひょう</h3>
             <p className="text-xs text-yellow-700 mb-3">1日に何こ集めたらながれぼしを出すか決めます。</p>
-            <div className="flex gap-2 flex-wrap">
-              {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                <button key={n} onClick={() => saveSettings({...settings, dailyGoal: n})}
-                  className="w-10 h-10 rounded-lg font-bold border-2 transition-all text-sm"
-                  style={(settings.dailyGoal ?? 5) === n
-                    ? { borderColor: '#eab308', backgroundColor: '#fefce8', color: '#713f12' }
-                    : { borderColor: '#d6d3d1', backgroundColor: 'white', color: '#78716c' }}>
-                  {n}
-                </button>
-              ))}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => saveSettings({...settings, dailyGoal: Math.max(1, (settings.dailyGoal ?? 5) - 1)})}
+                className="w-10 h-10 rounded-lg font-bold border-2 border-yellow-300 bg-white text-yellow-600 text-lg active:scale-95 transition-all">▽</button>
+              <span className="text-3xl font-bold text-yellow-800 w-10 text-center">{settings.dailyGoal ?? 5}</span>
+              <button
+                onClick={() => saveSettings({...settings, dailyGoal: Math.min(10, (settings.dailyGoal ?? 5) + 1)})}
+                className="w-10 h-10 rounded-lg font-bold border-2 border-yellow-300 bg-white text-yellow-600 text-lg active:scale-95 transition-all">△</button>
+              <span className="text-xs text-yellow-600">（1〜10）</span>
             </div>
           </div>
 
@@ -188,17 +187,15 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
               </div>
             ))}
           </div>
-        </div>
 
-        <div className="space-y-6">
           <div className="bg-purple-50 p-4 rounded-xl border border-purple-200 shadow-sm">
             <h3 className="font-bold text-lg mb-1 text-purple-800 flex items-center gap-1"><Sparkles className="w-4 h-4"/> コレクションの「登録ライン」</h3>
             <p className="text-xs text-purple-600 mb-1">どの書き方で仕上げた時に、一覧（コレクション）へ追加するかを決めます。</p>
             <p className="text-xs text-purple-400 mb-3">※後で変更しても、過去にかざった文字は消えません</p>
             {(() => {
-              const hasBlank    = (settings.blankTarget          ?? 1) > 0;
-              const hasHidden   = (settings.traceBlueHiddenTarget ?? 0) > 0;
-              const hasTest     = (settings.testTarget            ?? 1) > 0;
+              const hasBlank  = (settings.blankTarget          ?? 1) > 0;
+              const hasHidden = (settings.traceBlueHiddenTarget ?? 0) > 0;
+              const hasTest   = (settings.testTarget            ?? 1) > 0;
               const lvl2ok = hasBlank || hasHidden || hasTest;
               const lvl3ok = hasHidden || hasTest;
               const disabledCls = 'border-stone-200 bg-stone-50 text-stone-300 cursor-not-allowed';
@@ -207,26 +204,28 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
               return (
                 <div className="flex flex-col gap-2">
                   <button onClick={() => saveSettings({...settings, completionLevel: 1})}
-                    className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${settings.completionLevel === 1 || !settings.completionLevel ? activeCls : normalCls}`}>
-                    1： なぞり・てん・おてほん・みないで（どれでもOK）
+                    className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left text-sm ${settings.completionLevel === 1 || !settings.completionLevel ? activeCls : normalCls}`}>
+                    1： ✏️👁️🟦⚫️🙈 どれでもOK
                   </button>
                   <button onClick={() => lvl2ok && saveSettings({...settings, completionLevel: 2})}
                     disabled={!lvl2ok}
-                    className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${!lvl2ok ? disabledCls : settings.completionLevel === 2 ? activeCls : normalCls}`}>
-                    2： おてほん・みないで（自力で書けたらOK）
-                    {!lvl2ok && <span className="block text-[11px] font-normal mt-0.5 text-stone-400">※ おてほん か みないでモードを追加してください</span>}
+                    className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left text-sm ${!lvl2ok ? disabledCls : settings.completionLevel === 2 ? activeCls : normalCls}`}>
+                    2： 👁️🟦🙈🙈 自力で書けたらOK
+                    {!lvl2ok && <span className="block text-[11px] font-normal mt-0.5 text-stone-400">※ 👁️おてほん か 🙈みないでモードを追加してください</span>}
                   </button>
                   <button onClick={() => lvl3ok && saveSettings({...settings, completionLevel: 3})}
                     disabled={!lvl3ok}
-                    className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left ${!lvl3ok ? disabledCls : settings.completionLevel === 3 ? activeCls : normalCls}`}>
-                    3： みないで（見本なしで書けたらOK）
-                    {!lvl3ok && <span className="block text-[11px] font-normal mt-0.5 text-stone-400">※ みないでモードを追加してください</span>}
+                    className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left text-sm ${!lvl3ok ? disabledCls : settings.completionLevel === 3 ? activeCls : normalCls}`}>
+                    3： 🙈 見本なしで書けたらOK
+                    {!lvl3ok && <span className="block text-[11px] font-normal mt-0.5 text-stone-400">※ 🙈みないでモードを追加してください</span>}
                   </button>
                 </div>
               );
             })()}
           </div>
+        </div>
 
+        <div className="space-y-6">
           <div className="bg-stone-50 p-4 rounded-xl border border-stone-200">
             <h3 className="font-bold text-lg mb-3">各モードの枠の色設定</h3>
             <div className="space-y-6">

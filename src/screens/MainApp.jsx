@@ -88,7 +88,7 @@ export const MainApp = ({ currentUser, onLogout }) => {
   const [selectedKanji, setSelectedKanji] = useState(null);
   const [bestShots, setBestShots] = useState({});
   const [settings, setSettings] = useState({
-    warmupEnabled: true, traceColor: 'red', tenColor: 'green', blankColor: 'sky', testColor: 'purple',
+    warmupEnabled: true, traceColor: 'red', tenColor: 'green', blankColor: 'sky', traceBlueHiddenColor: 'sky', testColor: 'purple',
     newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [],
     soundEnabled: true, voiceEnabled: true, traceAllTarget: 1, tenTarget: 1, blankTarget: 1, testTarget: 1,
     visualStyle: 'flat', animSpeed: 1300, strokeColor: 'mono', guideOpacity: 'soft', guideLayerOpacity: 'soft',
@@ -616,7 +616,7 @@ export const MainApp = ({ currentUser, onLogout }) => {
                   </>
                 ) : (
                   <>
-                    <div className="text-[11px] font-bold text-amber-400 mb-1">⭐ ながれぼしまで</div>
+                    <div className="text-[11px] font-bold text-amber-400 mb-1">⭐ きょうのながれぼしまで</div>
                     <div className="text-4xl font-bold text-amber-500 font-kyokasho leading-none">
                       あと <span className="text-5xl text-orange-500">{remaining}</span> こ
                     </div>
