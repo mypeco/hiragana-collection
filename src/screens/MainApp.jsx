@@ -214,31 +214,50 @@ export const MainApp = ({ currentUser, onLogout }) => {
     if (activeTab === 'words') setActiveTab('hiragana');
     setView('grid');
 
-    const newTotal = Object.keys(bestShots).length + (bestShots[char] ? 0 : 1);
+    const isNewChar = !bestShots[char];
+    const newTotal = Object.keys(bestShots).length + (isNewChar ? 1 : 0);
     if (prevTotalRef.current === null) prevTotalRef.current = newTotal - 1;
-    const prevTotal = prevTotalRef.current;
     prevTotalRef.current = newTotal;
 
-    const MILESTONES = [10, 20, 30, 40, 50, 60, 70, 75];
-    const hitMilestone = MILESTONES.find(m => prevTotal < m && newTotal >= m);
-    if (hitMilestone) {
+    const updatedShots = { ...bestShots, [char]: { ...(bestShots[char] || {}), type: practiceType } };
+    const traceHex = COLOR_OPTIONS.find(c => c.id === (settings.traceColor || 'sky'))?.hex  || '#38bdf8';
+    const blankHex = COLOR_OPTIONS.find(c => c.id === (settings.blankColor || 'green'))?.hex || '#4ade80';
+    const testHex  = COLOR_OPTIONS.find(c => c.id === (settings.testColor  || 'purple'))?.hex || '#c084fc';
+    const makeColorPalette = (shots) => {
+      const tc = Object.values(shots).filter(s => s.type === 'traceAll' || s.type === 'trace').length;
+      const bc = Object.values(shots).filter(s => s.type === 'blank').length;
+      const sc = Object.values(shots).filter(s => s.type === 'test').length;
+      return [{ hex: traceHex, count: tc }, { hex: blankHex, count: bc }, { hex: testHex, count: sc }];
+    };
+
+    // 全部コレクション達成（特別パーティクル）
+    if (newTotal >= KANA_DATA.length) {
       if (navigator.vibrate) navigator.vibrate([60, 50, 80, 50, 120, 50, 200]);
-      const updatedShots = { ...bestShots, [char]: { ...(bestShots[char] || {}), type: practiceType } };
-      const traceCount = Object.values(updatedShots).filter(s => s.type === 'traceAll' || s.type === 'trace').length;
-      const blankCount = Object.values(updatedShots).filter(s => s.type === 'blank').length;
-      const testCount  = Object.values(updatedShots).filter(s => s.type === 'test').length;
-      const traceHex = COLOR_OPTIONS.find(c => c.id === (settings.traceColor || 'sky'))?.hex  || '#38bdf8';
-      const blankHex = COLOR_OPTIONS.find(c => c.id === (settings.blankColor || 'green'))?.hex || '#4ade80';
-      const testHex  = COLOR_OPTIONS.find(c => c.id === (settings.testColor  || 'purple'))?.hex || '#c084fc';
-      setTimeout(() => {
-        setStarCelebration({ milestone: hitMilestone, isFinal: hitMilestone === 75,
-          starColorPalette: [
-            { hex: traceHex, count: traceCount },
-            { hex: blankHex, count: blankCount },
-            { hex: testHex,  count: testCount  },
-          ]
-        });
-      }, 700);
+      setTimeout(() => setStarCelebration({ milestone: KANA_DATA.length, isFinal: true, starColorPalette: makeColorPalette(updatedShots) }), 700);
+      const newSettings = { ...settings, todayGoalFired: true };
+      setSettings(newSettings);
+      db.settings.put({ userId: currentUser.id, ...newSettings });
+      return;
+    }
+
+    // きょうのもくひょう達成チェック（新しい文字のときだけ）
+    if (isNewChar) {
+      const today = new Date().toLocaleDateString('ja-JP');
+      const isToday = settings.todayDate === today;
+      const prevCount = isToday ? (settings.todayCount ?? 0) : 0;
+      const newCount = prevCount + 1;
+      const dailyGoal = settings.dailyGoal ?? 5;
+      const alreadyFired = isToday && (settings.todayGoalFired ?? false);
+
+      const newSettings = { ...settings, todayCount: newCount, todayDate: today, todayGoalFired: alreadyFired || newCount >= dailyGoal };
+      setSettings(newSettings);
+      db.settings.put({ userId: currentUser.id, ...newSettings });
+
+      if (!alreadyFired && newCount >= dailyGoal) {
+        if (navigator.vibrate) navigator.vibrate([60, 50, 80, 50, 120, 50, 200]);
+        setTimeout(() => setStarCelebration({ milestone: dailyGoal, isFinal: false, starColorPalette: makeColorPalette(updatedShots) }), 700);
+        return;
+      }
     }
 
     const wordAlertDelay = hitMilestone ? 4800 : 300;
@@ -309,7 +328,7 @@ export const MainApp = ({ currentUser, onLogout }) => {
     const traceCount = Object.values(bestShots).filter(s => s.type === 'traceAll' || s.type === 'trace').length;
     const blankCount = Object.values(bestShots).filter(s => s.type === 'blank').length;
     const testCount  = Object.values(bestShots).filter(s => s.type === 'test').length;
-    setStarCelebration({ milestone: 75, isFinal: true,
+    setStarCelebration({ milestone: KANA_DATA.length, isFinal: true,
       starColorPalette: [
         { hex: traceHex, count: traceCount },
         { hex: blankHex, count: blankCount },
@@ -566,33 +585,44 @@ export const MainApp = ({ currentUser, onLogout }) => {
           </div>
 
           {(() => {
-            const MILESTONES = [10, 20, 30, 40, 50, 60, 70, 75];
-            const nextMilestone = MILESTONES.find(m => m > totalCollected);
-            const remaining = nextMilestone ? nextMilestone - totalCollected : 0;
             const isFinal = totalCollected >= KANA_DATA.length;
+            const today = new Date().toLocaleDateString('ja-JP');
+            const isToday = settings.todayDate === today;
+            const todayCount = isToday ? (settings.todayCount ?? 0) : 0;
+            const dailyGoal = settings.dailyGoal ?? 5;
+            const goalReached = isToday && (settings.todayGoalFired ?? false);
+            const remaining = Math.max(dailyGoal - todayCount, 0);
             return (
               <div className={`w-full max-w-xs mx-auto rounded-2xl px-5 py-4 border-2 shadow-sm transition-all text-center
                 ${isFinal
                   ? 'bg-gradient-to-b from-amber-50 to-yellow-50 border-amber-300 cursor-pointer hover:scale-105 hover:shadow-lg active:scale-95 animate-unlock-glow'
-                  : 'bg-white border-amber-100'}`}
+                  : goalReached
+                    ? 'bg-gradient-to-b from-yellow-50 to-amber-50 border-yellow-300'
+                    : 'bg-white border-amber-100'}`}
                 onClick={isFinal ? replayStarCelebration : undefined}>
                 {isFinal ? (
                   <>
                     <div className="text-2xl mb-1">🎊</div>
-                    <div className="text-sm font-bold text-amber-600 font-kyokasho">ぜんぶ あつめた！</div>
+                    <div className="text-sm font-bold text-amber-600 font-kyokasho">ぜんぶ あつめたよ！</div>
                     <div className="mt-2 text-[11px] font-bold text-amber-500 animate-pulse">
                       ⭐ タップして ほしを ふらせよう！ ⭐
                     </div>
                   </>
+                ) : goalReached ? (
+                  <>
+                    <div className="text-xl mb-1">🌟</div>
+                    <div className="text-sm font-bold text-yellow-700 font-kyokasho">きょうのもくひょう たっせい！</div>
+                    <div className="text-[10px] text-stone-400 mt-2">{totalCollected} / {KANA_DATA.length}こ あつめた</div>
+                  </>
                 ) : (
                   <>
-                    <div className="text-[11px] font-bold text-amber-400 mb-1">ながれぼしまで</div>
+                    <div className="text-[11px] font-bold text-amber-400 mb-1">⭐ ながれぼしまで</div>
                     <div className="text-4xl font-bold text-amber-500 font-kyokasho leading-none">
                       あと <span className="text-5xl text-orange-500">{remaining}</span> こ
                     </div>
-                    <div className="flex justify-center gap-0.5 mt-2 flex-wrap">
-                      {MILESTONES.map(m => (
-                        <span key={m} className={`text-sm ${totalCollected >= m ? 'opacity-100' : 'opacity-20'}`}>⭐</span>
+                    <div className="flex justify-center gap-1 mt-2">
+                      {[...Array(dailyGoal)].map((_, i) => (
+                        <span key={i} className={`text-sm transition-all ${i < todayCount ? 'opacity-100' : 'opacity-20'}`}>⭐</span>
                       ))}
                     </div>
                     <div className="text-[10px] text-stone-400 mt-1">{totalCollected} / {KANA_DATA.length}こ あつめた</div>

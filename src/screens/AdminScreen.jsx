@@ -189,6 +189,22 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
             </div>
           </div>
 
+          <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 shadow-sm">
+            <h3 className="font-bold text-lg mb-1 text-yellow-800 flex items-center gap-2">⭐ きょうのもくひょう</h3>
+            <p className="text-xs text-yellow-700 mb-3">1日に何こ集めたらながれぼしを出すか決めます。</p>
+            <div className="flex gap-2 flex-wrap">
+              {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                <button key={n} onClick={() => saveSettings({...settings, dailyGoal: n})}
+                  className="w-10 h-10 rounded-lg font-bold border-2 transition-all text-sm"
+                  style={(settings.dailyGoal ?? 5) === n
+                    ? { borderColor: '#eab308', backgroundColor: '#fefce8', color: '#713f12' }
+                    : { borderColor: '#d6d3d1', backgroundColor: 'white', color: '#78716c' }}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm">
             <h3 className="font-bold text-lg mb-1 text-indigo-800 flex items-center gap-2">🎯 れんしゅうの ながれ</h3>
             <p className="text-xs text-indigo-600 mb-3">各モードの目標回数を設定します。すべてのモードが完了すると、なかから1枚えらべます。0回にするとそのモードをスキップします。</p>
