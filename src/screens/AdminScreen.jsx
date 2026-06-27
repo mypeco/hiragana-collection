@@ -233,8 +233,8 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
                 { key: 'traceBlueColor',       label: '「🟦いちぶ」モードのいろ',    fallback: 'bg-orange-400' },
                 { key: 'tenColor',             label: '「⚫️てん」モードのいろ',      fallback: 'bg-orange-400' },
                 { key: 'blankColor',           label: '「👁️おてほん」モードのいろ',  fallback: 'bg-green-400'  },
-                { key: 'traceBlueHiddenColor', label: '「🫣いちぶ🫣」モードのいろ',   fallback: 'bg-sky-400'    },
-                { key: 'testColor',            label: '「🙈ぜんぶ🙈」モードのいろ',  fallback: 'bg-purple-400' },
+                { key: 'traceBlueHiddenColor', label: '「🫣いちぶ」モードのいろ',    fallback: 'bg-sky-400'    },
+                { key: 'testColor',            label: '「🙈ぜんぶ」モードのいろ',    fallback: 'bg-purple-400' },
               ].map(({ key, label, fallback }) => (
                 <div key={key}>
                   <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2">

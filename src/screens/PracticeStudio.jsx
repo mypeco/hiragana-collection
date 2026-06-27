@@ -614,6 +614,11 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                   ${!isGoalReached || !isSelectable ? 'opacity-40 grayscale border-stone-200' + (!isSelectable && isGoalReached ? ' cursor-not-allowed' : '') : ''}`}>
                 <div className="w-full h-full p-1 relative">
                   <ShotDisplay shot={pastBest} strokeWidth={10} color="#374151" hintStrokeWidth={8} />
+                  {pastBest.type === 'test' && (
+                    <div className="absolute inset-1 bg-stone-100/95 backdrop-blur-sm rounded-lg flex items-center justify-center z-10 border border-stone-200">
+                      <span className="text-2xl grayscale opacity-50">🙈</span>
+                    </div>
+                  )}
                 </div>
                 <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 border rounded-full whitespace-nowrap shadow-sm"
                   style={{ color: colorTheme.hex, borderColor: colorTheme.hex + '66', backgroundColor: colorTheme.hex + '11' }}>
@@ -709,7 +714,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                 <MasuBg masuStyle={settings.masuStyle} />
 
                 {/* traceAll / traceBlue ガイド */}
-                {(practiceMode === 'traceAll' || practiceMode === 'traceBlue' || practiceMode === 'traceBlueHidden') && svgPaths && (() => {
+                {(practiceMode === 'traceAll' || practiceMode === 'traceBlue' || (practiceMode === 'traceBlueHidden' && svgPaths && svgPaths.length > 1)) && svgPaths && (() => {
                   const go = settings.guideOpacity || 'soft';
                   if (go === 'none') return null;
                   const op = go === 'strong' ? 0.55 : 0.30;
@@ -876,6 +881,15 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                 <span className="font-black leading-none" style={{display:'inline-block',transform:'rotate(-90deg)',opacity:0.3,fontSize:'1.1rem',letterSpacing:'-3px'}}>〉〉</span>
               </button>
             </div>
+
+            {isGoalReached && !savingId && (
+              <button
+                onClick={() => practicesStripRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                className="mt-2 mx-auto px-6 py-2 rounded-full font-bold text-sm bg-amber-400 text-white border-2 border-amber-500 shadow-md active:scale-95 transition-all animate-bounce-in"
+              >
+                ⭐ えらぶ
+              </button>
+            )}
           </div>
         </div>
       </div>
