@@ -1,25 +1,10 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef } from 'react';
 import { db } from '../lib/db';
-import { speak } from '../lib/speech';
 import { Hand, Sparkles, Lock, SettingsIcon } from '../components/Icons';
 import { COLOR_OPTIONS, DURATION_OPTIONS } from '../data/kanaData';
 
 export const AdminScreen = ({ onBack, settings, saveSettings }) => {
   const fileInputRef = useRef(null);
-  const [jaVoices, setJaVoices] = useState([]);
-
-  useEffect(() => {
-    const load = () => {
-      const all = window.speechSynthesis.getVoices();
-      const ja = all.filter(v => v.lang.startsWith('ja'));
-      setJaVoices(ja);
-    };
-    load();
-    window.speechSynthesis.onvoiceschanged = load;
-    return () => { window.speechSynthesis.onvoiceschanged = null; };
-  }, []);
-
-  const IPAD_ONLY_VOICES = ['Kyoko', 'O-ren', 'Hattori', 'Otoya'];
 
   const handleExport = async () => {
     try {
@@ -128,40 +113,7 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4">
         <div className="space-y-6">
-          <div className="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm">
-            <h3 className="font-bold text-lg mb-1 text-green-800 flex items-center gap-2">🔊 おしゃべりの声</h3>
-            <p className="text-xs text-green-600 mb-3">文字やことばを読むときの声をえらべます。</p>
-            {jaVoices.length === 0 ? (
-              <p className="text-xs text-stone-400 font-bold">このデバイスでは音声が見つかりませんでした。</p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => { saveSettings({...settings, voiceName: ''}); speak('こんにちは'); }}
-                  className={`px-4 py-2.5 rounded-lg font-bold border-2 transition-all text-left text-sm ${!settings.voiceName ? 'border-green-500 bg-green-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}
-                >
-                  🤖 デフォルト（じどうせんたく）
-                </button>
-                {jaVoices.map(v => {
-                  const isIpadOnly = IPAD_ONLY_VOICES.some(n => v.name.includes(n));
-                  const isSelected = settings.voiceName === v.name;
-                  return (
-                    <button key={v.name}
-                      onClick={() => { saveSettings({...settings, voiceName: v.name}); speak('こんにちは', {}, v.name); }}
-                      className={`px-4 py-2.5 rounded-lg font-bold border-2 transition-all text-left text-sm flex items-center justify-between gap-2 ${isSelected ? 'border-green-500 bg-green-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}
-                    >
-                      <span>🗣 {v.name}</span>
-                      <span className="flex gap-1 flex-wrap justify-end">
-                        {isIpadOnly && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${isSelected ? 'bg-white/30 text-white' : 'bg-blue-100 text-blue-600'}`}>iPad専用</span>}
-                        {!v.localService && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${isSelected ? 'bg-white/30 text-white' : 'bg-stone-100 text-stone-500'}`}>オンライン</span>}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 shadow-sm">
+<div className="bg-stone-50 p-4 rounded-xl border border-stone-200 shadow-sm">
             <h3 className="font-bold text-lg mb-3 flex items-center gap-2"><Hand className="w-5 h-5 text-stone-500"/> ききうで（利き手）</h3>
             <div className="flex gap-2">
               <button onClick={() => saveSettings({...settings, hand: 'right'})} className={`px-6 py-2 rounded-lg font-bold border-2 transition-all ${settings.hand === 'right' || !settings.hand ? 'border-sky-500 bg-sky-400 text-white shadow-md' : 'border-stone-300 bg-white text-stone-600'}`}>みぎきき</button>
