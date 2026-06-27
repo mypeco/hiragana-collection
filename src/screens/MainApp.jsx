@@ -92,7 +92,7 @@ export const MainApp = ({ currentUser, onLogout }) => {
     traceColor: 'red', traceBlueColor: 'orange', tenColor: 'green', blankColor: 'emerald', traceBlueHiddenColor: 'sky', testColor: 'purple',
     newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [],
     soundEnabled: true, voiceEnabled: true,
-    strokeCheckTarget: 1, traceAllTarget: 1, traceBlueTarget: 1, tenTarget: 1, blankTarget: 1, traceBlueHiddenTarget: 0, testTarget: 1,
+    strokeCheckTarget: 1, traceAllTarget: 1, traceBlueTarget: 1, tenTarget: 1, blankTarget: 1, traceBlueHiddenTarget: 1, testTarget: 1,
     visualStyle: 'flat', animSpeed: 1300, strokeColor: 'mono', guideOpacity: 'soft', guideLayerOpacity: 'soft',
     showExampleCross: true, showCanvasCross: true, syncTrace: false
   });

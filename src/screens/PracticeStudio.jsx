@@ -410,7 +410,13 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
         (tS   === 0 || currentLogs.test             >= tS);
 
       if (isFlowDoneRef.current) {
-        // フロー完了後の自由練習 → モードはそのまま
+        // フロー完了後の隠しモードは毎回「もっとかいてみる？」を出してカバーを外す
+        const m = practiceModeRef.current;
+        if (m === 'test' || m === 'traceBlueHidden') {
+          setPracticeMode(null);
+          setCoversVisible(false);
+        }
+        // それ以外はモードをそのまま保持
       } else if (allDone) {
         setPracticeMode(null);
         setIsFlowDone(true);
@@ -832,17 +838,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                   </div>
                   <span className="text-[10px] md:text-xs font-bold">けす</span>
                 </button>
-                {isGoalReached && !savingId ? (
-                  <button
-                    onClick={() => setCoversVisible(false)}
-                    className="flex flex-col items-center justify-center w-14 md:w-20 h-28 md:h-36 rounded-2xl shadow-md border-2 border-amber-400 bg-amber-400 text-white font-bold gap-1 active:scale-95 transition-all animate-bounce-in"
-                  >
-                    <span className="text-lg">⭐</span>
-                    <span className="text-sm md:text-base tracking-widest leading-tight">えらぶ</span>
-                  </button>
-                ) : (
-                  <div className="w-14 md:w-20 h-28 md:h-36" aria-hidden="true" />
-                )}
+                <div className="w-14 md:w-20 h-28 md:h-36" aria-hidden="true" />
 
                 {strokeWarning && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 backdrop-blur-sm animate-fade-in p-4">

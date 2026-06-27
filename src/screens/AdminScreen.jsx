@@ -165,7 +165,7 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
               { key: 'traceBlueTarget',      label: 'いちぶ',    emoji: '🟦',   activeStyle: { borderColor: '#3b82f6', backgroundColor: '#eff6ff', color: '#1d4ed8' }, defaultVal: 1 },
               { key: 'tenTarget',            label: 'てん',      emoji: '⚫️',  activeStyle: { borderColor: '#f97316', backgroundColor: '#fff7ed', color: '#c2410c' }, defaultVal: 1 },
               { key: 'blankTarget',          label: 'おてほん',  emoji: '👁️',  activeStyle: { borderColor: '#22c55e', backgroundColor: '#dcfce7', color: '#15803d' }, defaultVal: 1 },
-              { key: 'traceBlueHiddenTarget',label: 'いちぶ🫣',  emoji: '🫣',   activeStyle: { borderColor: '#0ea5e9', backgroundColor: '#f0f9ff', color: '#0369a1' }, defaultVal: 0 },
+              { key: 'traceBlueHiddenTarget',label: 'いちぶ🫣',  emoji: '🫣',   activeStyle: { borderColor: '#0ea5e9', backgroundColor: '#f0f9ff', color: '#0369a1' }, defaultVal: 1 },
               { key: 'testTarget',           label: 'ぜんぶ🙈',  emoji: '🙈',   activeStyle: { borderColor: '#a855f7', backgroundColor: '#f3e8ff', color: '#7e22ce' }, defaultVal: 1 },
             ].map(({ key, label, emoji, activeStyle, defaultVal, onlyZeroOrOne }) => (
               <div key={key} className="flex items-center gap-3 mb-2">
