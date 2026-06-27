@@ -102,11 +102,12 @@ export const WORD_DATA = KANA_DATA.map((k, index) => ({
 }));
 
 export const COLOR_OPTIONS = [
-  { id: 'red',    name: '赤',    class: 'border-red-400 ring-red-200',    bg: 'bg-red-400',    bgLight: '#fffafa', hex: '#f87171' },
-  { id: 'orange', name: 'オレンジ', class: 'border-orange-400 ring-orange-200', bg: 'bg-orange-400', bgLight: '#fffbf3', hex: '#fb923c' },
-  { id: 'green',  name: '若葉色', class: 'border-green-400 ring-green-200',  bg: 'bg-green-400',  bgLight: '#f0fdf4', hex: '#4ade80' },
-  { id: 'sky',    name: '空色',  class: 'border-sky-400 ring-sky-200',    bg: 'bg-sky-400',    bgLight: '#f0f9ff', hex: '#38bdf8' },
-  { id: 'purple', name: '藤色',  class: 'border-purple-400 ring-purple-200', bg: 'bg-purple-400', bgLight: '#f0e8ff', hex: '#c084fc' },
+  { id: 'red',     name: '赤',      class: 'border-red-400 ring-red-200',       bg: 'bg-red-400',     bgLight: '#fffafa', hex: '#f87171' },
+  { id: 'orange',  name: 'オレンジ', class: 'border-orange-400 ring-orange-200', bg: 'bg-orange-400',  bgLight: '#fffbf3', hex: '#fb923c' },
+  { id: 'green',   name: '若葉色',  class: 'border-green-400 ring-green-200',   bg: 'bg-green-400',   bgLight: '#f0fdf4', hex: '#4ade80' },
+  { id: 'emerald', name: '深緑',    class: 'border-emerald-500 ring-emerald-200', bg: 'bg-emerald-500', bgLight: '#ecfdf5', hex: '#10b981' },
+  { id: 'sky',     name: '空色',    class: 'border-sky-400 ring-sky-200',       bg: 'bg-sky-400',     bgLight: '#f0f9ff', hex: '#38bdf8' },
+  { id: 'purple',  name: '藤色',    class: 'border-purple-400 ring-purple-200', bg: 'bg-purple-400',  bgLight: '#f0e8ff', hex: '#c084fc' },
 ];
 
 export const USER_COLOR_OPTIONS = [

@@ -423,16 +423,16 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
   const completionLevel = settings.completionLevel || 1;
   const canSelect = (type) => {
     if (completionLevel === 3 && type !== 'test') return false;
-    if (completionLevel === 2 && (type === 'traceAll' || type === 'trace' || type === 'traceBlue' || type === 'ten' || type === 'hint')) return false;
+    if (completionLevel === 2 && (type === 'traceAll' || type === 'trace' || type === 'traceBlue' || type === 'ten' || type === 'hint' || type === 'traceBlueHidden')) return false;
     return true;
   };
 
-  const traceTheme      = COLOR_OPTIONS.find(c=>c.id===settings.traceColor)           || COLOR_OPTIONS[0];
-  const traceBlueTheme  = COLOR_OPTIONS.find(c=>c.id===settings.traceBlueColor)        || COLOR_OPTIONS[3];
-  const tenTheme        = COLOR_OPTIONS.find(c=>c.id===settings.tenColor)              || COLOR_OPTIONS[1];
-  const blankTheme      = COLOR_OPTIONS.find(c=>c.id===settings.blankColor)            || COLOR_OPTIONS[2];
-  const traceBlueHiddenTheme = COLOR_OPTIONS.find(c=>c.id===settings.traceBlueHiddenColor) || COLOR_OPTIONS[4];
-  const testTheme       = COLOR_OPTIONS.find(c=>c.id===settings.testColor)             || COLOR_OPTIONS[3];
+  const traceTheme           = COLOR_OPTIONS.find(c=>c.id===settings.traceColor)            || COLOR_OPTIONS.find(c=>c.id==='red');
+  const traceBlueTheme       = COLOR_OPTIONS.find(c=>c.id===settings.traceBlueColor)         || COLOR_OPTIONS.find(c=>c.id==='sky');
+  const tenTheme             = COLOR_OPTIONS.find(c=>c.id===settings.tenColor)               || COLOR_OPTIONS.find(c=>c.id==='orange');
+  const blankTheme           = COLOR_OPTIONS.find(c=>c.id===settings.blankColor)             || COLOR_OPTIONS.find(c=>c.id==='green');
+  const traceBlueHiddenTheme = COLOR_OPTIONS.find(c=>c.id===settings.traceBlueHiddenColor)   || COLOR_OPTIONS.find(c=>c.id==='sky');
+  const testTheme            = COLOR_OPTIONS.find(c=>c.id===settings.testColor)              || COLOR_OPTIONS.find(c=>c.id==='purple');
 
   const borderColor = !practiceMode ? '#d6d3d1' :
     (practiceMode === 'trace' || practiceMode === 'traceAll') ? traceTheme.hex :
@@ -456,13 +456,13 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
     if (type === 'traceBlue') return '🟦いちぶ';
     if (type === 'ten' || type === 'hint') return '⚫️てん';
     if (type === 'blank') return '👁️おてほん';
-    if (type === 'traceBlueHidden') return '🟦🙈いちぶ';
+    if (type === 'traceBlueHidden') return '🫣いちぶ';
     if (type === 'test') return '🙈ぜんぶ';
     return type;
   };
 
   const unlockText = completionLevel === 3 ? '🙈 からえらぼう！' :
-    completionLevel === 2 ? '👁️ か 🟦🙈 か 🙈 からえらぼう！' : 'えらべるよ！';
+    completionLevel === 2 ? '👁️ か 🙈 からえらぼう！' : 'えらべるよ！';
 
   // traceBlue用パス
   const bluePaths = useMemo(() =>
@@ -548,7 +548,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
               {traceBlueTarget > 0 && <span className={`px-1 py-0.5 rounded ${sessionLogs.traceBlue >= traceBlueTarget ? 'text-green-300' : 'text-white/80'}`}>🟦{sessionLogs.traceBlue}/{traceBlueTarget}</span>}
               {tenTarget > 0 && <span className={`px-1 py-0.5 rounded ${sessionLogs.ten >= tenTarget ? 'text-green-300' : 'text-white/80'}`}>⚫️{sessionLogs.ten}/{tenTarget}</span>}
               {blankTarget > 0 && <span className={`px-1 py-0.5 rounded ${sessionLogs.blank >= blankTarget ? 'text-green-300' : 'text-white/80'}`}>👁️{sessionLogs.blank}/{blankTarget}</span>}
-              {traceBlueHiddenTarget > 0 && <span className={`px-1 py-0.5 rounded ${sessionLogs.traceBlueHidden >= traceBlueHiddenTarget ? 'text-green-300' : 'text-white/80'}`}>🟦🙈{sessionLogs.traceBlueHidden}/{traceBlueHiddenTarget}</span>}
+              {traceBlueHiddenTarget > 0 && <span className={`px-1 py-0.5 rounded ${sessionLogs.traceBlueHidden >= traceBlueHiddenTarget ? 'text-green-300' : 'text-white/80'}`}>🫣{sessionLogs.traceBlueHidden}/{traceBlueHiddenTarget}</span>}
               {testTarget > 0 && <span className={`px-1 py-0.5 rounded ${sessionLogs.test >= testTarget ? 'text-green-300' : 'text-white/80'}`}>🙈{sessionLogs.test}/{testTarget}</span>}
             </div>
           )}
@@ -635,7 +635,7 @@ export const PracticeStudio = ({ currentUser, targetKanji, settings, onBack, onS
                 traceBlueTarget       > 0 ? { mode: 'traceBlue',       label: '🟦いちぶ',   theme: traceBlueTheme       } : null,
                 tenTarget             > 0 ? { mode: 'ten',             label: '⚫️てん',     theme: tenTheme             } : null,
                 blankTarget           > 0 ? { mode: 'blank',           label: '👁️おてほん', theme: blankTheme           } : null,
-                traceBlueHiddenTarget > 0 ? { mode: 'traceBlueHidden', label: '🟦🙈いちぶ', theme: traceBlueHiddenTheme } : null,
+                traceBlueHiddenTarget > 0 ? { mode: 'traceBlueHidden', label: '🫣いちぶ',   theme: traceBlueHiddenTheme } : null,
                 testTarget            > 0 ? { mode: 'test',            label: '🙈ぜんぶ',   theme: testTheme            } : null,
               ].filter(Boolean).map(({ mode, label, theme }) => (
                 <button key={mode} onClick={() => !hasDrawn && setPracticeMode(mode)} disabled={hasDrawn}

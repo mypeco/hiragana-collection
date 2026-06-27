@@ -165,7 +165,7 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
               { key: 'traceBlueTarget',      label: 'いちぶ',    emoji: '🟦',   activeStyle: { borderColor: '#3b82f6', backgroundColor: '#eff6ff', color: '#1d4ed8' }, defaultVal: 1 },
               { key: 'tenTarget',            label: 'てん',      emoji: '⚫️',  activeStyle: { borderColor: '#f97316', backgroundColor: '#fff7ed', color: '#c2410c' }, defaultVal: 1 },
               { key: 'blankTarget',          label: 'おてほん',  emoji: '👁️',  activeStyle: { borderColor: '#22c55e', backgroundColor: '#dcfce7', color: '#15803d' }, defaultVal: 1 },
-              { key: 'traceBlueHiddenTarget',label: 'いちぶ🙈',  emoji: '🟦🙈', activeStyle: { borderColor: '#0ea5e9', backgroundColor: '#f0f9ff', color: '#0369a1' }, defaultVal: 0 },
+              { key: 'traceBlueHiddenTarget',label: 'いちぶ🫣',  emoji: '🫣',   activeStyle: { borderColor: '#0ea5e9', backgroundColor: '#f0f9ff', color: '#0369a1' }, defaultVal: 0 },
               { key: 'testTarget',           label: 'ぜんぶ🙈',  emoji: '🙈',   activeStyle: { borderColor: '#a855f7', backgroundColor: '#f3e8ff', color: '#7e22ce' }, defaultVal: 1 },
             ].map(({ key, label, emoji, activeStyle, defaultVal, onlyZeroOrOne }) => (
               <div key={key} className="flex items-center gap-3 mb-2">
@@ -193,11 +193,10 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
             <p className="text-xs text-purple-600 mb-1">どの書き方で仕上げた時に、一覧（コレクション）へ追加するかを決めます。</p>
             <p className="text-xs text-purple-400 mb-3">※後で変更しても、過去にかざった文字は消えません</p>
             {(() => {
-              const hasBlank  = (settings.blankTarget          ?? 1) > 0;
-              const hasHidden = (settings.traceBlueHiddenTarget ?? 0) > 0;
-              const hasTest   = (settings.testTarget            ?? 1) > 0;
-              const lvl2ok = hasBlank || hasHidden || hasTest;
-              const lvl3ok = hasHidden || hasTest;
+              const hasBlank  = (settings.blankTarget ?? 1) > 0;
+              const hasTest   = (settings.testTarget  ?? 1) > 0;
+              const lvl2ok = hasBlank || hasTest;
+              const lvl3ok = hasTest;
               const disabledCls = 'border-stone-200 bg-stone-50 text-stone-300 cursor-not-allowed';
               const activeCls   = 'border-purple-500 bg-purple-400 text-white shadow-md';
               const normalCls   = 'border-stone-300 bg-white text-stone-600 hover:border-purple-300';
@@ -205,18 +204,18 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
                 <div className="flex flex-col gap-2">
                   <button onClick={() => saveSettings({...settings, completionLevel: 1})}
                     className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left text-sm ${settings.completionLevel === 1 || !settings.completionLevel ? activeCls : normalCls}`}>
-                    1： ✏️👁️🟦⚫️🙈 どれでもOK
+                    1： ✏️👁️🟦⚫️🫣🙈 どれでもOK
                   </button>
                   <button onClick={() => lvl2ok && saveSettings({...settings, completionLevel: 2})}
                     disabled={!lvl2ok}
                     className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left text-sm ${!lvl2ok ? disabledCls : settings.completionLevel === 2 ? activeCls : normalCls}`}>
-                    2： 👁️🟦🙈🙈 自力で書けたらOK
+                    2： 👁️🙈 おてほん か ぜんぶみないで かけたらOK
                     {!lvl2ok && <span className="block text-[11px] font-normal mt-0.5 text-stone-400">※ 👁️おてほん か 🙈みないでモードを追加してください</span>}
                   </button>
                   <button onClick={() => lvl3ok && saveSettings({...settings, completionLevel: 3})}
                     disabled={!lvl3ok}
                     className={`px-4 py-3 rounded-lg font-bold border-2 transition-all text-left text-sm ${!lvl3ok ? disabledCls : settings.completionLevel === 3 ? activeCls : normalCls}`}>
-                    3： 🙈 見本なしで書けたらOK
+                    3： 🙈 ぜんぶみないで かけたらOK
                     {!lvl3ok && <span className="block text-[11px] font-normal mt-0.5 text-stone-400">※ 🙈みないでモードを追加してください</span>}
                   </button>
                 </div>
@@ -234,14 +233,14 @@ export const AdminScreen = ({ onBack, settings, saveSettings }) => {
                 { key: 'traceBlueColor',       label: '「🟦いちぶ」モードのいろ',    fallback: 'bg-orange-400' },
                 { key: 'tenColor',             label: '「⚫️てん」モードのいろ',      fallback: 'bg-orange-400' },
                 { key: 'blankColor',           label: '「👁️おてほん」モードのいろ',  fallback: 'bg-green-400'  },
-                { key: 'traceBlueHiddenColor', label: '「🟦🙈いちぶ🙈」モードのいろ', fallback: 'bg-sky-400'    },
+                { key: 'traceBlueHiddenColor', label: '「🫣いちぶ🫣」モードのいろ',   fallback: 'bg-sky-400'    },
                 { key: 'testColor',            label: '「🙈ぜんぶ🙈」モードのいろ',  fallback: 'bg-purple-400' },
               ].map(({ key, label, fallback }) => (
                 <div key={key}>
                   <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${COLOR_OPTIONS.find(c => c.id === settings[key])?.bg || fallback}`}></div> {label}
                   </label>
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-6 gap-2">
                     {COLOR_OPTIONS.map(color => (
                       <button key={`${key}-${color.id}`} onClick={() => saveSettings({...settings, [key]: color.id})}
                         className={`w-full h-10 rounded-lg border-4 transition-all ${color.bg} ${settings[key] === color.id ? 'border-stone-400 scale-105 shadow-md' : 'border-transparent hover:border-stone-300'}`}></button>

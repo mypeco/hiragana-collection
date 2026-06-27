@@ -88,7 +88,7 @@ export const MainApp = ({ currentUser, onLogout }) => {
   const [selectedKanji, setSelectedKanji] = useState(null);
   const [bestShots, setBestShots] = useState({});
   const [settings, setSettings] = useState({
-    warmupEnabled: true, traceColor: 'red', tenColor: 'green', blankColor: 'sky', traceBlueHiddenColor: 'sky', testColor: 'purple',
+    warmupEnabled: true, traceColor: 'red', tenColor: 'green', blankColor: 'green', traceBlueHiddenColor: 'sky', testColor: 'purple',
     newDuration: 7, partColor: true, requireGuide: true, hand: 'right', hallOfFame: [], hallOfFame2: [],
     soundEnabled: true, voiceEnabled: true, traceAllTarget: 1, tenTarget: 1, blankTarget: 1, testTarget: 1,
     visualStyle: 'flat', animSpeed: 1300, strokeColor: 'mono', guideOpacity: 'soft', guideLayerOpacity: 'soft',
